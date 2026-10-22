@@ -49,6 +49,8 @@ Inbound never executes Discord message text. Outbound never invents permission c
 5. `allowed_mentions` defaults to user pings only (no everyone, no roles).
 6. History fetch uses Discord's max of 100.
 7. Invite permission integer is `326686067792` (documented in README). Connector code does not further restrict ManageRoles/ManageChannels.
+8. Webhook fetch uses `redirect: 'error'` so the sender key cannot follow a 30x.
+9. Threads are detected via `channel.isThread()` / thread types, never via “has parentId” (that would treat category children as threads).
 
 ## Docs to keep in sync
 

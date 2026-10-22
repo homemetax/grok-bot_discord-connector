@@ -20,13 +20,24 @@ class LoopGuard {
     this.windowMs = windowMs;
     this.cooldownMs = cooldownMs;
     this.now = now;
-    /** @type {Map<string, { times: number[], lastAt: number }>} */
+    /** @type {Map<string, { times: number[], lastAt: number | null }>} */
     this.exchanges = new Map();
   }
 
   _prune(state, now) {
     state.times = state.times.filter((t) => now - t < this.windowMs);
+    if (state.lastAt != null && now - state.lastAt >= this.windowMs && state.times.length === 0) {
+      state.lastAt = null;
+    }
     return state;
+  }
+
+  _gc(now) {
+    if (this.exchanges.size < 4096) return;
+    for (const [key, state] of this.exchanges) {
+      this._prune(state, now);
+      if (state.times.length === 0 && state.lastAt == null) this.exchanges.delete(key);
+    }
   }
 
   allow(key, { isBot } = {}) {
@@ -36,6 +47,7 @@ class LoopGuard {
     }
 
     const now = this.now();
+    this._gc(now);
     const state = this._prune(this.exchanges.get(key) || { times: [], lastAt: null }, now);
 
     if (state.lastAt != null && now - state.lastAt < this.cooldownMs) {

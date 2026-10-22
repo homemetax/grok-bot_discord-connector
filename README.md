@@ -267,11 +267,13 @@ sudo systemctl enable --now grok-discord@miya grok-discord@scar
 
 ## Security
 
-- **Tokens, webhook URLs, and sender keys** live in the environment only. Logs redact values of env vars whose names look like tokens/keys/secrets.
-- **`.env` is gitignored.** Commit `.env.example` and `config/agents.example.json` only.
-- **Validate inputs:** snowflakes, agent names, header names, history limits, URLs. CLI rejects malformed ids before calling Discord.
-- **Untrusted content:** Discord `content` is JSON data. Do not pipe it to a shell on the Grok Bot side either.
+- **Tokens, webhook URLs, and sender keys** live in the environment only. Logs redact values of env vars whose names look like tokens, secrets, passwords, or webhooks (including `*_WEBHOOK_URL`).
+- **`.env` is gitignored.** Commit `.env.example` and `config/agents.example.json` only. The CLI refuses to `--file` attach `.env*` / private keys, or any file whose bytes contain a secret env value.
+- **Validate inputs:** snowflakes, agent names, header names (no CR/LF), history limits, URLs, emoji identifiers. CLI rejects malformed ids before calling Discord. Flag names cannot be `__proto__` / `constructor`.
+- **Untrusted content:** Discord `content` is JSON data. It is never passed to a shell, `eval`, or dynamic `require`. Do not pipe it to a shell on the Grok Bot side either.
+- **Webhook POSTs do not follow redirects**, so a 30x cannot leak the sender-key header to another host. 401/403 are not retried. 429 waits are capped (15s) using `Retry-After` / `retry_after`.
 - **@everyone / roles:** inbound ignores mass pings as a bot trigger; outbound blocks those mention types by default.
+- **Allowlist:** category `parentId` is not treated as a thread parent. Only real threads/forum posts inherit the parent channel allowlist.
 - **ManageRoles / ManageChannels:** included in the invite integer. A bot can only assign roles **below** its highest role, and cannot grant permissions it does not have. Moving the bot role to the top of the list, or leaving ManageRoles on a publicly invitable bot, is a guild-compromise risk. Prefer a dedicated bot role, deny those permissions in channel overwrites where unused, and keep tokens on the host only.
 - **DMs** are off unless you set `enable_dms`.
 - **Loop guard** stops two bots from bouncing mentions forever in the same thread/channel.

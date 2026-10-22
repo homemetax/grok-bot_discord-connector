@@ -29,10 +29,20 @@ function assertEnvName(name, label = 'env var') {
 }
 
 function assertHeaderName(name) {
-  if (typeof name !== 'string' || !HEADER_NAME_RE.test(name)) {
+  if (typeof name !== 'string' || !HEADER_NAME_RE.test(name) || /[\r\n]/.test(name)) {
     throw new Error('Invalid webhook key header name');
   }
   return name;
+}
+
+function assertHeaderValue(value, label = 'header value') {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`${label} is empty`);
+  }
+  if (/[\r\n]/.test(value)) {
+    throw new Error(`${label} contains CR/LF`);
+  }
+  return value;
 }
 
 function assertPositiveInt(value, label, { min = 1, max = Number.MAX_SAFE_INTEGER } = {}) {
@@ -74,6 +84,7 @@ module.exports = {
   assertAgentName,
   assertEnvName,
   assertHeaderName,
+  assertHeaderValue,
   assertPositiveInt,
   parseLimit,
   assertHttpUrl,

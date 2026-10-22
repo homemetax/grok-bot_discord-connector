@@ -1,6 +1,11 @@
 'use strict';
 
+const BLOCKED_FLAG_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 function pushFlag(flags, key, value) {
+  if (BLOCKED_FLAG_KEYS.has(key) || key.includes('__')) {
+    throw new Error(`Invalid flag name: ${key}`);
+  }
   if (Object.prototype.hasOwnProperty.call(flags, key)) {
     const cur = flags[key];
     flags[key] = Array.isArray(cur) ? cur.concat(value) : [cur, value];
@@ -10,7 +15,7 @@ function pushFlag(flags, key, value) {
 }
 
 function parseArgs(argv) {
-  const args = { _: [], flags: {} };
+  const args = { _: [], flags: Object.create(null) };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--') {
@@ -51,7 +56,9 @@ function flagString(flags, ...keys) {
 }
 
 function flagBool(flags, key) {
-  return Boolean(flags[key]);
+  const v = flags[key];
+  if (v === false || v === 'false' || v === '0' || v === 'no') return false;
+  return Boolean(v);
 }
 
 module.exports = { parseArgs, asArray, flagString, flagBool };

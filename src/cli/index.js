@@ -4,7 +4,7 @@ const path = require('node:path');
 const { loadEnvFile } = require('../env');
 const { loadConfig, findAgent } = require('../config');
 const { restForAgent } = require('../rest');
-const { wrapDiscordError, exitCodeForError } = require('../discord-error');
+const { wrapDiscordError, exitCodeForError, isDiscordHttpError } = require('../discord-error');
 const { parseArgs } = require('./parse');
 const {
   cmdSend,
@@ -139,8 +139,8 @@ async function main(argv = process.argv.slice(2)) {
     const code = await runCli(argv);
     return code;
   } catch (err) {
-    const wrapped = err && err.status ? err : wrapDiscordError(err);
-    process.stderr.write(`${wrapped.message}\n`);
+    const wrapped = isDiscordHttpError(err) ? (err instanceof Error && err.status ? err : wrapDiscordError(err)) : err;
+    process.stderr.write(`${wrapped && wrapped.message ? wrapped.message : String(wrapped)}\n`);
     return exitCodeForError(wrapped);
   }
 }

@@ -48,6 +48,21 @@ const DEFAULT_ALLOWED_MENTIONS = Object.freeze({
   parse: Object.freeze(['users']),
 });
 
+/** Cap inbound webhook Retry-After waits so a huge retry_after cannot stall the process. */
+const MAX_WEBHOOK_RETRY_AFTER_MS = 15000;
+
+const THREAD_CHANNEL_TYPES = Object.freeze([
+  10,
+  11,
+  12,
+  'GUILD_NEWS_THREAD',
+  'GUILD_PUBLIC_THREAD',
+  'GUILD_PRIVATE_THREAD',
+  'ANNOUNCEMENT_THREAD',
+  'PUBLIC_THREAD',
+  'PRIVATE_THREAD',
+]);
+
 module.exports = {
   DISCORD_CONTENT_LIMIT,
   DISCORD_HISTORY_MAX,
@@ -62,4 +77,6 @@ module.exports = {
   DEFAULT_WEBHOOK_TIMEOUT_MS,
   DEFAULT_LOOP_GUARD,
   DEFAULT_ALLOWED_MENTIONS,
+  MAX_WEBHOOK_RETRY_AFTER_MS,
+  THREAD_CHANNEL_TYPES,
 };

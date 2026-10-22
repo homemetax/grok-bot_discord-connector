@@ -23,4 +23,8 @@ describe('parseArgs', () => {
     assert.equal(args.flags.content, 'hello');
     assert.deepEqual(args.flags.file, ['a.png', 'b.png']);
   });
+
+  it('rejects prototype-polluting flag names', () => {
+    assert.throws(() => parseArgs(['send', '--constructor', 'x']));
+  });
 });

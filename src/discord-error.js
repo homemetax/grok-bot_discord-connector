@@ -33,6 +33,17 @@ function extractRetryAfter(err) {
   return null;
 }
 
+function isDiscordHttpError(err) {
+  if (!err) return false;
+  if (err instanceof ConnectorError) return true;
+  const status = err.status || err.statusCode || err.httpStatus;
+  if (Number.isInteger(status) && status >= 400) return true;
+  if (err.name === 'DiscordAPIError' || err.name === 'RateLimitError' || err.name === 'HTTPError') {
+    return true;
+  }
+  return false;
+}
+
 function wrapDiscordError(err) {
   if (err instanceof ConnectorError) return err;
   const status = err && (err.status || err.statusCode || err.httpStatus) || 0;
@@ -73,4 +84,4 @@ function exitCodeForError(err) {
   return 1;
 }
 
-module.exports = { ConnectorError, wrapDiscordError, extractRetryAfter, exitCodeForError };
+module.exports = { ConnectorError, wrapDiscordError, extractRetryAfter, exitCodeForError, isDiscordHttpError };

@@ -20,7 +20,10 @@ function evaluateInbound(event, policy, loopGuard) {
 
   const botUserId = event.botUserId == null ? '' : String(event.botUserId);
   const authorId = event.authorId == null ? '' : String(event.authorId);
-  if (!botUserId || !authorId || authorId === botUserId) {
+  if (!botUserId || !authorId) {
+    return { action: 'ignore', reason: 'invalid' };
+  }
+  if (authorId === botUserId) {
     return { action: 'ignore', reason: 'own_message' };
   }
 

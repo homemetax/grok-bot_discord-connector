@@ -2,7 +2,7 @@
 
 const { Routes } = require('../rest');
 const { assertSnowflake, assertNonEmptyString } = require('../validate');
-const { flagString } = require('./parse');
+const { flagString, flagBool } = require('./parse');
 
 function optionalInt(flags, key) {
   if (flags[key] === undefined || flags[key] === true) return undefined;
@@ -36,8 +36,7 @@ async function cmdChannel(session, sub, flags) {
       if (parent) body.parent_id = assertSnowflake(parent, 'parent id');
       const topic = optionalString(flags, 'topic');
       if (topic !== undefined) body.topic = topic;
-      const nsfw = flags.nsfw;
-      if (nsfw !== undefined) body.nsfw = Boolean(nsfw);
+      if (flags.nsfw !== undefined) body.nsfw = flagBool(flags, 'nsfw');
       return session.call('post', Routes.guildChannels(guildId), { body });
     }
     case 'edit': {
@@ -49,7 +48,7 @@ async function cmdChannel(session, sub, flags) {
       if (topic !== undefined) body.topic = topic;
       const parent = flagString(flags, 'parent', 'parent-id');
       if (parent) body.parent_id = assertSnowflake(parent, 'parent id');
-      if (flags.nsfw !== undefined) body.nsfw = Boolean(flags.nsfw);
+      if (flags.nsfw !== undefined) body.nsfw = flagBool(flags, 'nsfw');
       if (!Object.keys(body).length) throw new Error('channel edit requires at least one field');
       return session.call('patch', Routes.channel(channelId), { body });
     }
@@ -86,8 +85,8 @@ async function cmdRole(session, sub, flags) {
       if (color !== undefined) {
         body.color = color.startsWith('#') ? Number.parseInt(color.slice(1), 16) : Number.parseInt(color, 10);
       }
-      if (flags.hoist !== undefined) body.hoist = Boolean(flags.hoist);
-      if (flags.mentionable !== undefined) body.mentionable = Boolean(flags.mentionable);
+      if (flags.hoist !== undefined) body.hoist = flagBool(flags, 'hoist');
+      if (flags.mentionable !== undefined) body.mentionable = flagBool(flags, 'mentionable');
       return session.call('post', Routes.guildRoles(guildId), { body });
     }
     case 'edit': {
@@ -102,8 +101,8 @@ async function cmdRole(session, sub, flags) {
       if (color !== undefined) {
         body.color = color.startsWith('#') ? Number.parseInt(color.slice(1), 16) : Number.parseInt(color, 10);
       }
-      if (flags.hoist !== undefined) body.hoist = Boolean(flags.hoist);
-      if (flags.mentionable !== undefined) body.mentionable = Boolean(flags.mentionable);
+      if (flags.hoist !== undefined) body.hoist = flagBool(flags, 'hoist');
+      if (flags.mentionable !== undefined) body.mentionable = flagBool(flags, 'mentionable');
       if (!Object.keys(body).length) throw new Error('role edit requires at least one field');
       return session.call('patch', Routes.guildRole(guildId, roleId), { body });
     }

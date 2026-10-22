@@ -9,7 +9,7 @@
 function secretEnvNames(env = process.env) {
   const names = [];
   for (const name of Object.keys(env)) {
-    if (/token|secret|password|authorization|webhook_key|_key$/i.test(name)) {
+    if (/token|secret|password|authorization|webhook/i.test(name)) {
       names.push(name);
     }
   }
@@ -20,7 +20,7 @@ function redact(value, env = process.env) {
   let text = String(value);
   for (const name of secretEnvNames(env)) {
     const secret = env[name];
-    if (typeof secret === 'string' && secret.length >= 8 && text.includes(secret)) {
+    if (typeof secret === 'string' && secret.length >= 4 && text.includes(secret)) {
       text = text.split(secret).join(`[redacted:${name}]`);
     }
   }

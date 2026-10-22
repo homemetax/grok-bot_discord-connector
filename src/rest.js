@@ -60,11 +60,13 @@ function encodeEmoji(emoji) {
   if (typeof emoji !== 'string' || !emoji.length) {
     throw new Error('Emoji is required');
   }
-  let value = emoji.trim();
-  const custom = value.match(/^<a?:([^:>]+):(\d+)>$/);
-  if (custom) {
-    value = `${custom[1]}:${custom[2]}`;
+  const value = emoji.trim();
+  if (value.length > 64 || /[\r\n\/?#]/.test(value)) {
+    throw new Error('Invalid emoji');
   }
+  const wrapped = value.match(/^<a?:([^:>]+):(\d{17,20})>$/);
+  if (wrapped) return `${wrapped[1]}:${wrapped[2]}`;
+  if (/^[a-zA-Z0-9_]+:\d{17,20}$/.test(value)) return value;
   return value;
 }
 

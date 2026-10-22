@@ -34,6 +34,7 @@ describe('postWebhook', () => {
     assert.equal(calls.length, 1);
     assert.equal(calls[0].opts.headers['X-Webhook-Key'], 'super-secret-key');
     assert.equal(calls[0].opts.headers['Content-Type'], 'application/json');
+    assert.equal(calls[0].opts.redirect, 'error');
     assert.equal(JSON.parse(calls[0].opts.body).agent, 'miya');
   });
 

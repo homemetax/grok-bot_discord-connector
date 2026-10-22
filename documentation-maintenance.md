@@ -28,5 +28,6 @@ Update docs in the same change that alters behavior. Do not leave README, exampl
 - `test/allowlist.test.js`
 - `test/loop-guard.test.js`
 - `test/split.test.js`
+- `test/security.test.js` (redirects, secret files, prototype flags, thread vs category)
 
 Add or edit those tests when the corresponding rule changes.

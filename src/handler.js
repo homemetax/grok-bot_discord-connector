@@ -1,6 +1,7 @@
 'use strict';
 
 const { collectBotRoleIds } = require('./mentions');
+const { isThreadChannel } = require('./allowlist');
 const { evaluateInbound } = require('./inbound');
 const { fetchChannelHistory } = require('./history');
 const {
@@ -12,12 +13,6 @@ const {
 const { postWebhook } = require('./webhook');
 const { requireEnv } = require('./env');
 const { DISCORD_HISTORY_MAX } = require('./constants');
-
-function isThreadChannel(channel) {
-  if (!channel) return false;
-  if (typeof channel.isThread === 'function') return channel.isThread();
-  return Boolean(channel.parentId);
-}
 
 function describeMessage(message) {
   const channel = message.channel;
@@ -99,6 +94,16 @@ async function handleMessageCreate(runtime, message) {
     return;
   }
 
+  let url;
+  let key;
+  try {
+    url = requireEnv(agent.webhook_url_env, env);
+    key = requireEnv(agent.webhook_key_env, env);
+  } catch (err) {
+    log.error(err.message);
+    return;
+  }
+
   if (event.authorIsBot) {
     loopGuard.record(decision.contextKey);
   }
@@ -131,16 +136,6 @@ async function handleMessageCreate(runtime, message) {
     history: historyFromDiscordMessages(history),
     attachments: attachmentsFromDiscord(message),
   });
-
-  let url;
-  let key;
-  try {
-    url = requireEnv(agent.webhook_url_env, env);
-    key = requireEnv(agent.webhook_key_env, env);
-  } catch (err) {
-    log.error(err.message);
-    return;
-  }
 
   try {
     const result = await postWebhook({
