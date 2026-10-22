@@ -1,0 +1,55 @@
+# Project context
+
+`grok-bot_discord-connector` is a Node.js (discord.js v14) bridge between Grok Bot agents and Discord.
+
+## Model
+
+- One Discord **application + bot token** per agent (Miya, Scar, Jack, Devos, Pip, …).
+- `config/agents.json` lists agents: `name`, token env var, webhook URL env var, webhook key env var, allowlisted channel IDs.
+- Secrets live only in `process.env` (typically a `.env` file loaded into the environment). They are never committed or logged.
+- Hosting is a Linux box under **pm2** or **systemd**. No paid SaaS is required.
+- **Multi-client in one process** is the default (`node src/index.js` logs in every configured agent). **One process per bot** is `DISCORD_AGENT=<name>`.
+
+## Data flow
+
+```
+Discord MESSAGE_CREATE
+  → mention + allowlist + loop-guard
+  → JSON payload
+  → POST agent Grok Bot routine webhook (sender key header)
+  → agent later calls `node bin/discord.js …` with that agent's token
+  → Discord REST (send / reply / react / thread / history / …)
+```
+
+Inbound never executes Discord message text. Outbound never invents permission caps; Discord 403s are shown as-is.
+
+## Key modules
+
+| Path | Role |
+| --- | --- |
+| `src/index.js` | Process entry: load env/config, start 1..N clients |
+| `src/config.js` | Validate config; `selectAgents` for multi vs single |
+| `src/mentions.js` | User/role mention detection; ignore @everyone/@here |
+| `src/allowlist.js` | Channel allowlist + thread parent + DM flag |
+| `src/loop-guard.js` | Bot-to-bot cap + cooldown per agent+channel/thread |
+| `src/inbound.js` | Pure gate used by the handler and tests |
+| `src/handler.js` | discord.js `messageCreate` → webhook POST |
+| `src/payload.js` | Webhook JSON builder (untrusted strings) |
+| `src/webhook.js` | fetch POST with 429 retry, no 401/403 retry |
+| `src/split.js` | 2000-character message splitting |
+| `src/cli/` | Outbound REST CLI |
+| `bin/discord.js` | CLI entry |
+
+## Invariants
+
+1. Act only when this bot's user id is in `message.mentions.users` or one of its (non-@everyone) roles is in `mention_roles`.
+2. Ignore DMs unless the agent has `enable_dms: true`.
+3. Never handle the bot's own messages.
+4. Humans always pass the loop guard (and reset the bot-to-bot chain). Other bots are capped per thread/channel with a cooldown.
+5. `allowed_mentions` defaults to user pings only (no everyone, no roles).
+6. History fetch uses Discord's max of 100.
+7. Invite permission integer is `326686067792` (documented in README). Connector code does not further restrict ManageRoles/ManageChannels.
+
+## Docs to keep in sync
+
+See `documentation-maintenance.md`. Primary user-facing doc is `README.md`.
