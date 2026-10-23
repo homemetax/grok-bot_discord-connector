@@ -8,7 +8,7 @@ const { AuthorDailyLimiter } = require('../src/author-daily');
 
 const BOT = '111111111111111111';
 const HUMAN = '222222222222222222';
-const EXEMPT = '358829341020520470';
+const EXEMPT = '200000000000000001';
 const CHANNEL = '100000000000000001';
 const GUILD = '555555555555555555';
 
@@ -42,14 +42,14 @@ function mockRuntime({ authorLimiter, agent = {}, env = {} } = {}) {
   return {
     client: { user: { id: BOT } },
     agent: {
-      name: 'miya',
+      name: 'GrokBot',
       allowed_channel_ids: [],
       enable_dms: false,
       mention_mode: 'user_only',
       per_author_daily_limit: 1,
       rate_limit_exempt_author_ids: [EXEMPT],
-      webhook_url_env: 'MIYA_WEBHOOK_URL',
-      webhook_key_env: 'MIYA_WEBHOOK_KEY',
+      webhook_url_env: 'GROKBOT_WEBHOOK_URL',
+      webhook_key_env: 'GROKBOT_WEBHOOK_KEY',
       webhook_key_header: 'Authorization',
       webhook_timeout_ms: 1000,
       history_limit: 5,
@@ -63,8 +63,8 @@ function mockRuntime({ authorLimiter, agent = {}, env = {} } = {}) {
       error: () => {},
     },
     env: {
-      MIYA_WEBHOOK_URL: 'https://example.test/hook',
-      MIYA_WEBHOOK_KEY: 'secret-key',
+      GROKBOT_WEBHOOK_URL: 'https://example.test/hook',
+      GROKBOT_WEBHOOK_KEY: 'secret-key',
       ...env,
     },
     authorLimiter: limiter,
@@ -84,7 +84,7 @@ function okFetch() {
 describe('handleMessageCreate daily limit', () => {
   it('does not POST the webhook or mention Discord when the author is rate limited', async () => {
     const limiter = new AuthorDailyLimiter({ filePath: null, now: () => 1e12 });
-    limiter.tryConsume({ agentName: 'miya', authorId: HUMAN, limit: 1 });
+    limiter.tryConsume({ agentName: 'GrokBot', authorId: HUMAN, limit: 1 });
     const runtime = mockRuntime({ authorLimiter: limiter });
     let fetches = 0;
     const orig = globalThis.fetch;
@@ -136,6 +136,6 @@ describe('handleMessageCreate daily limit', () => {
       globalThis.fetch = orig;
     }
     assert.equal(fetches, 2);
-    assert.equal(limiter.count('miya', EXEMPT), 0);
+    assert.equal(limiter.count('GrokBot', EXEMPT), 0);
   });
 });

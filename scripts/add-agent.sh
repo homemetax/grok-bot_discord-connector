@@ -28,7 +28,7 @@ Usage: scripts/add-agent.sh --name NAME [--prefix PREFIX]
 
 Options:
   --name NAME     Required. 1-64 letters, digits, _ or -
-  --prefix PREFIX Env var prefix (e.g. MIYA)
+  --prefix PREFIX Env var prefix (e.g. GROKBOT)
   --help          Show this help
 EOF
 }
