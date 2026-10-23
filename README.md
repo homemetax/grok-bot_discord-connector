@@ -16,6 +16,7 @@ Runs on a Linux box under **pm2** or **systemd**. No paid hosted services.
 | [docs/CONFIG.md](docs/CONFIG.md) | Every config key (`mention_mode`, daily limit, allowlist, loop guard) |
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | pm2, logs, restart, 0 guilds / webhook 401 / gateway 4014 |
 | [docs/SECURITY.md](docs/SECURITY.md) | Secrets, untrusted content, invite permissions |
+| [skills/discord-connector-setup/SKILL.md](skills/discord-connector-setup/SKILL.md) | Agent skill: install, configure, and run a per-agent Discord bot |
 
 ```bash
 npm run setup                 # Node >= 20, npm ci, local config (no secrets written)
@@ -334,6 +335,7 @@ bin/discord.js              outbound CLI
 src/index.js                inbound gateway process
 scripts/                    setup, add-agent, start:pm2 (no secrets written)
 docs/                       teammate guides (see table at the top)
+skills/                     agent SKILL.md for Discord connector setup
 config/agents.example.json  committed example
 data/                       persisted counts (gitignored; created at runtime)
 deploy/                     pm2 + systemd units
