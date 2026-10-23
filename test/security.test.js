@@ -107,14 +107,14 @@ describe('webhook secret handling', () => {
 });
 
 describe('logger redacts webhook URLs', () => {
-  it('redacts MIYA_WEBHOOK_URL', () => {
+  it('redacts GROKBOT_WEBHOOK_URL', () => {
     const env = {
-      MIYA_WEBHOOK_URL: 'https://hooks.example.test/abc/verysecretpath',
+      GROKBOT_WEBHOOK_URL: 'https://hooks.example.test/abc/verysecretpath',
       PATH: '/usr/bin',
     };
     const out = redact('posting to https://hooks.example.test/abc/verysecretpath', env);
     assert.equal(out.includes('verysecretpath'), false);
-    assert.match(out, /\[redacted:MIYA_WEBHOOK_URL\]/);
+    assert.match(out, /\[redacted:GROKBOT_WEBHOOK_URL\]/);
   });
 });
 
@@ -122,7 +122,7 @@ describe('CLI flag prototype safety', () => {
   it('rejects __proto__ flag names', () => {
     assert.throws(() => parseArgs(['send', '--__proto__', 'polluted']), /Invalid flag name/);
     const before = {}.polluted;
-    parseArgs(['send', '--agent', 'miya']);
+    parseArgs(['send', '--agent', 'GrokBot']);
     assert.equal({}.polluted, before);
   });
 });
@@ -139,14 +139,14 @@ describe('attachment secret guard', () => {
     const secretFile = path.join(dir, 'notes.txt');
     fs.writeFileSync(secretFile, 'token=abcdefghijklmnopqrstuvwxyz\n');
     const envFile = path.join(dir, '.env');
-    fs.writeFileSync(envFile, 'MIYA_DISCORD_TOKEN=abcdefghijklmnopqrstuvwxyz\n');
+    fs.writeFileSync(envFile, 'GROKBOT_DISCORD_TOKEN=abcdefghijklmnopqrstuvwxyz\n');
     try {
       assert.throws(
-        () => loadFiles({ file: envFile }, { MIYA_DISCORD_TOKEN: 'abcdefghijklmnopqrstuvwxyz' }),
+        () => loadFiles({ file: envFile }, { GROKBOT_DISCORD_TOKEN: 'abcdefghijklmnopqrstuvwxyz' }),
         /secret or environment file/,
       );
       assert.throws(
-        () => loadFiles({ file: secretFile }, { MIYA_DISCORD_TOKEN: 'abcdefghijklmnopqrstuvwxyz' }),
+        () => loadFiles({ file: secretFile }, { GROKBOT_DISCORD_TOKEN: 'abcdefghijklmnopqrstuvwxyz' }),
         /contains a secret environment value/,
       );
     } finally {
@@ -182,7 +182,7 @@ describe('error paths', () => {
         channelId: CHANNEL,
         mentionedUserIds: ['1'],
       },
-      { agentName: 'miya', allowedChannelIds: [CHANNEL], enableDms: false, botRoleIds: [] },
+      { agentName: 'GrokBot', allowedChannelIds: [CHANNEL], enableDms: false, botRoleIds: [] },
       new LoopGuard(),
     );
     assert.equal(result.reason, 'invalid');

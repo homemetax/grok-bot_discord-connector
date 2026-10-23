@@ -44,12 +44,12 @@ function sh(script, args, extra = {}) {
 
 describe('agent-config helpers', () => {
   it('derives PREFIX from the agent name', () => {
-    assert.equal(prefixFromName('miya'), 'MIYA');
+    assert.equal(prefixFromName('GrokBot'), 'GROKBOT');
     assert.equal(prefixFromName('my-bot'), 'MY_BOT');
-    assert.deepEqual(envNamesForPrefix('PIP'), {
-      token_env: 'PIP_DISCORD_TOKEN',
-      webhook_url_env: 'PIP_WEBHOOK_URL',
-      webhook_key_env: 'PIP_WEBHOOK_KEY',
+    assert.deepEqual(envNamesForPrefix('AGENT_1'), {
+      token_env: 'AGENT_1_DISCORD_TOKEN',
+      webhook_url_env: 'AGENT_1_WEBHOOK_URL',
+      webhook_key_env: 'AGENT_1_WEBHOOK_KEY',
     });
   });
 
@@ -111,7 +111,7 @@ describe('agent-config helpers', () => {
     const root = tmpRoot();
     const config = path.join(root, 'config', 'agents.json');
     fs.copyFileSync(path.join(root, 'config', 'agents.example.json'), config);
-    assert.throws(() => addAgent(config, { name: 'miya', prefix: 'MIYA' }), /already exists/);
+    assert.throws(() => addAgent(config, { name: 'GrokBot', prefix: 'GROKBOT' }), /already exists/);
   });
 });
 
@@ -150,12 +150,12 @@ describe('packaging scripts', () => {
       ['--dry-run', '--config', path.join(root, 'config', 'agents.json')],
     );
     assert.equal(result.status, 0, result.stderr || result.stdout);
-    assert.match(result.stdout, /grok-discord-miya/);
-    assert.match(result.stdout, /DISCORD_AGENT=miya/);
-    assert.match(result.stdout, /grok-discord-scar/);
+    assert.match(result.stdout, /grok-discord-GrokBot/);
+    assert.match(result.stdout, /DISCORD_AGENT=GrokBot/);
+    assert.match(result.stdout, /grok-discord-agent-1/);
     assert.match(result.stdout, /Secrets come from the environment/);
     assert.match(result.stdout, /not running pm2 save|will not run pm2 save/i);
     assert.doesNotMatch(result.stdout, /^\+ .*pm2 save/m);
-    assert.doesNotMatch(result.stdout + result.stderr, /MIYA_DISCORD_TOKEN=/);
+    assert.doesNotMatch(result.stdout + result.stderr, /GROKBOT_DISCORD_TOKEN=/);
   });
 });

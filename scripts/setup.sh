@@ -28,7 +28,7 @@ Usage: scripts/setup.sh [--name NAME] [--prefix PREFIX] [--yes] [--skip-npm]
 
 Options:
   --name NAME     Agent name (1-64 letters, digits, _ or -)
-  --prefix PREFIX Env var prefix, e.g. MIYA -> MIYA_DISCORD_TOKEN
+  --prefix PREFIX Env var prefix, e.g. GROKBOT -> GROKBOT_DISCORD_TOKEN
   --yes           Do not prompt
   --skip-npm      Skip npm ci (tests / already installed)
   --help          Show this help

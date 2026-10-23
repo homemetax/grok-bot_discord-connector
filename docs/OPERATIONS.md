@@ -11,7 +11,7 @@ npm run start:pm2
 # all agents in one Node process
 npm start
 # or
-DISCORD_AGENT=miya node src/index.js
+DISCORD_AGENT=GrokBot node src/index.js
 ```
 
 `scripts/start.sh` reads `config/agents.json` and runs `pm2 start src/index.js --name grok-discord-<name>` with `DISCORD_AGENT=<name>`. It does **not** run `pm2 save` (a dump would persist env). Secrets come from the environment; `src/index.js` loads a gitignored `.env` if present.
@@ -22,7 +22,7 @@ systemd units: `deploy/grok-discord.service` (all agents) and `deploy/grok-disco
 
 ```bash
 pm2 logs
-pm2 logs grok-discord-miya
+pm2 logs grok-discord-GrokBot
 LOG_LEVEL=debug npm start
 ```
 
@@ -44,10 +44,10 @@ Useful debug lines:
 ## Restart
 
 ```bash
-pm2 restart grok-discord-miya
+pm2 restart grok-discord-GrokBot
 pm2 restart all
 # after changing Portal intents or tokens:
-pm2 restart grok-discord-miya
+pm2 restart grok-discord-GrokBot
 ```
 
 Intents and tokens are read at process start. Restart after Portal or `.env` edits.
@@ -57,8 +57,8 @@ Intents and tokens are read at process start. Restart after Portal or `.env` edi
 ## Stop
 
 ```bash
-pm2 stop grok-discord-miya
-pm2 delete grok-discord-miya
+pm2 stop grok-discord-GrokBot
+pm2 delete grok-discord-GrokBot
 ```
 
 ## Common errors
@@ -98,7 +98,7 @@ A 4014 on reconnect loops burns [session starts](https://discord.com/developers/
 
 ### Online but ignores mentions
 
-- `mention_mode: user_only` (Miya example) ignores **role** mentions. @ the bot user.
+- `mention_mode: user_only` (GrokBot example) ignores **role** mentions. @ the bot user.
 - Channel overwrite denies View Channel ([permission overwrites](https://discord.com/developers/docs/topics/permissions#permission-overwrites)).
 - Non-empty `allowed_channel_ids` does not include this channel / thread parent.
 - Daily limit hit (`rate_limited` at debug).

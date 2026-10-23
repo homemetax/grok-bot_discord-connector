@@ -15,7 +15,7 @@ const GUILD = '555555555555555555';
 
 function policy(over = {}) {
   return {
-    agentName: 'miya',
+    agentName: 'GrokBot',
     allowedChannelIds: [CHANNEL],
     enableDms: false,
     botRoleIds: collectBotRoleIds([GUILD, ROLE], GUILD),
@@ -51,7 +51,7 @@ describe('evaluateInbound', () => {
     const g = new LoopGuard({ cooldownMs: 0 });
     const result = evaluateInbound(event(), policy(), g);
     assert.equal(result.action, 'forward');
-    assert.equal(result.contextKey, 'miya:100000000000000001');
+    assert.equal(result.contextKey, 'GrokBot:100000000000000001');
   });
 
   it('ignores messages that do not mention the bot', () => {

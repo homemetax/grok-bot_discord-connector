@@ -1,7 +1,7 @@
 {
   "name": "grok-bot-discord-connector",
   "version": "1.0.0",
-  "description": "Discord connector that bridges Grok Bot agents (Miya, Scar, Jack, Devos, Pip, ...) to Discord using one bot application per agent.",
+  "description": "Discord connector that bridges Grok Bot agents (GrokBot, agent-1, agent-2, ...) to Discord using one bot application per agent.",
   "main": "src/index.js",
   "bin": {
     "grok-discord": "bin/discord.js"
