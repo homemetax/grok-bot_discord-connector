@@ -2,7 +2,8 @@
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizeConfig, selectAgents } = require('../src/config');
+const path = require('node:path');
+const { normalizeConfig, selectAgents, resolveDataDir, loadConfig } = require('../src/config');
 
 const sample = {
   history_limit: 20,
@@ -66,6 +67,65 @@ describe('normalizeConfig', () => {
     assert.equal(cfg.agents[0].webhook_key_header, 'Authorization');
   });
 
+  it('defaults mention_mode, daily limit, exempt list, and data_dir', () => {
+    const cfg = normalizeConfig({
+      agents: [{
+        name: 'scar',
+        token_env: 'SCAR_DISCORD_TOKEN',
+        webhook_url_env: 'SCAR_WEBHOOK_URL',
+        webhook_key_env: 'SCAR_WEBHOOK_KEY',
+      }],
+    });
+    assert.equal(cfg.mention_mode, 'user_or_role');
+    assert.equal(cfg.per_author_daily_limit, 0);
+    assert.deepEqual(cfg.rate_limit_exempt_author_ids, []);
+    assert.equal(cfg.data_dir, './data');
+    assert.equal(cfg.agents[0].mention_mode, 'user_or_role');
+    assert.equal(cfg.agents[0].per_author_daily_limit, 0);
+    assert.deepEqual(cfg.agents[0].rate_limit_exempt_author_ids, []);
+  });
+
+  it('accepts miya-style daily limit, exempt ids, and user_only mention_mode', () => {
+    const cfg = normalizeConfig({
+      agents: [{
+        name: 'miya',
+        token_env: 'MIYA_DISCORD_TOKEN',
+        webhook_url_env: 'MIYA_WEBHOOK_URL',
+        webhook_key_env: 'MIYA_WEBHOOK_KEY',
+        per_author_daily_limit: 1,
+        rate_limit_exempt_author_ids: ['358829341020520470'],
+        mention_mode: 'user_only',
+      }],
+    });
+    assert.equal(cfg.agents[0].per_author_daily_limit, 1);
+    assert.deepEqual(cfg.agents[0].rate_limit_exempt_author_ids, ['358829341020520470']);
+    assert.equal(cfg.agents[0].mention_mode, 'user_only');
+  });
+
+  it('rejects an unknown mention_mode', () => {
+    assert.throws(() =>
+      normalizeConfig({
+        agents: [{ ...sample.agents[0], mention_mode: 'everyone' }],
+      }),
+    );
+  });
+
+  it('rejects a negative per_author_daily_limit', () => {
+    assert.throws(() =>
+      normalizeConfig({
+        agents: [{ ...sample.agents[0], per_author_daily_limit: -1 }],
+      }),
+    );
+  });
+
+  it('rejects invalid rate_limit_exempt_author_ids', () => {
+    assert.throws(() =>
+      normalizeConfig({
+        agents: [{ ...sample.agents[0], rate_limit_exempt_author_ids: ['not-an-id'] }],
+      }),
+    );
+  });
+
   it('accepts a missing or empty allowed_channel_ids list', () => {
     const { allowed_channel_ids: omitted } = normalizeConfig({
       agents: [{
@@ -87,6 +147,38 @@ describe('normalizeConfig', () => {
       }],
     }).agents[0];
     assert.deepEqual(empty, []);
+  });
+});
+
+describe('resolveDataDir', () => {
+  it('defaults to ./data under cwd', () => {
+    assert.equal(resolveDataDir({ cwd: '/opt/app', env: {} }), path.resolve('/opt/app', './data'));
+  });
+
+  it('prefers DATA_DIR over config data_dir', () => {
+    assert.equal(
+      resolveDataDir({
+        config: { data_dir: './from-config' },
+        env: { DATA_DIR: '/var/lib/connector' },
+        cwd: '/opt/app',
+      }),
+      path.resolve('/opt/app', '/var/lib/connector'),
+    );
+  });
+});
+
+describe('example config', () => {
+  it('loads agents.example.json with miya user_only and daily limit 1', () => {
+    const cfg = loadConfig({
+      filePath: 'config/agents.example.json',
+      cwd: path.join(__dirname, '..'),
+    });
+    const miya = cfg.agents.find((a) => a.name === 'miya');
+    assert.equal(miya.per_author_daily_limit, 1);
+    assert.deepEqual(miya.rate_limit_exempt_author_ids, ['358829341020520470']);
+    assert.equal(miya.mention_mode, 'user_only');
+    assert.equal(cfg.agents.find((a) => a.name === 'scar').per_author_daily_limit, 0);
+    assert.equal(cfg.agents.find((a) => a.name === 'scar').mention_mode, 'user_or_role');
   });
 });
 

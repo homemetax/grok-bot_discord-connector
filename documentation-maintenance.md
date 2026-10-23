@@ -7,7 +7,8 @@ Update docs in the same change that alters behavior. Do not leave README, exampl
 | Topic | Update these |
 | --- | --- |
 | Agent config schema, env var names, header name | `README.md`, `config/agents.example.json`, `.env.example`, `PROJECT_CONTEXT.md`, `src/config.js` |
-| Inbound mention / allowlist / loop-guard rules | `README.md`, `PROJECT_CONTEXT.md`, unit tests under `test/` |
+| Inbound mention / allowlist / loop-guard / daily-limit rules | `README.md`, `PROJECT_CONTEXT.md`, unit tests under `test/` |
+| Persisted data dir | `README.md`, `.env.example`, `.gitignore`, `src/author-daily.js` |
 | Webhook JSON payload | `README.md` (schema section), `src/payload.js` |
 | Outbound CLI commands and flags | `README.md`, `src/cli/index.js` help text |
 | Invite permissions integer | `README.md`, `src/constants.js` |
@@ -27,6 +28,7 @@ Update docs in the same change that alters behavior. Do not leave README, exampl
 - `test/mentions.test.js`
 - `test/allowlist.test.js`
 - `test/loop-guard.test.js`
+- `test/author-daily.test.js` (cap, exempt, 24h window, persist/reload, atomic write)
 - `test/split.test.js`
 - `test/security.test.js` (redirects, secret files, prototype flags, thread vs category)
 

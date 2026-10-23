@@ -8,12 +8,16 @@
     "window_ms": 120000,
     "cooldown_ms": 8000
   },
+  "data_dir": "./data",
   "agents": [
     {
       "name": "miya",
       "token_env": "MIYA_DISCORD_TOKEN",
       "webhook_url_env": "MIYA_WEBHOOK_URL",
-      "webhook_key_env": "MIYA_WEBHOOK_KEY"
+      "webhook_key_env": "MIYA_WEBHOOK_KEY",
+      "per_author_daily_limit": 1,
+      "rate_limit_exempt_author_ids": ["358829341020520470"],
+      "mention_mode": "user_only"
     },
     {
       "name": "scar",

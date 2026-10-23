@@ -2,15 +2,21 @@
 
 const path = require('node:path');
 const { loadEnvFile } = require('./env');
-const { loadConfig, selectAgents } = require('./config');
+const { loadConfig, selectAgents, resolveDataDir } = require('./config');
 const { createRuntime, loginRuntime, destroyRuntime } = require('./runtime');
 const { createLogger } = require('./logger');
+const { AuthorDailyLimiter } = require('./author-daily');
+const { AUTHOR_DAILY_FILENAME } = require('./constants');
 
 async function main({ env = process.env, cwd = process.cwd() } = {}) {
   loadEnvFile(path.join(cwd, '.env'), env);
   const log = createLogger(null, env);
   const config = loadConfig({ env, cwd });
   const agents = selectAgents(config, env);
+  const dataDir = resolveDataDir({ config, env, cwd });
+  const authorLimiter = new AuthorDailyLimiter({
+    filePath: path.join(dataDir, AUTHOR_DAILY_FILENAME),
+  });
 
   if (agents.length === 1) {
     log.info(`starting single agent process: ${agents[0].name} (config ${config.config_path})`);
@@ -24,7 +30,7 @@ async function main({ env = process.env, cwd = process.cwd() } = {}) {
   const failures = [];
 
   for (const agent of agents) {
-    const runtime = createRuntime(agent, { env });
+    const runtime = createRuntime(agent, { env, authorLimiter });
     try {
       await loginRuntime(runtime, env);
       runtimes.push(runtime);

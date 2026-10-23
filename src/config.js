@@ -8,6 +8,11 @@ const {
   DEFAULT_WEBHOOK_TIMEOUT_MS,
   DEFAULT_LOOP_GUARD,
   DISCORD_HISTORY_MAX,
+  DEFAULT_DATA_DIR,
+  DEFAULT_PER_AUTHOR_DAILY_LIMIT,
+  DEFAULT_MENTION_MODE,
+  MENTION_MODES,
+  MAX_PER_AUTHOR_DAILY_LIMIT,
 } = require('./constants');
 const {
   assertAgentName,
@@ -98,6 +103,21 @@ function normalizeAgent(raw, defaults, index) {
     ? normalizeLoopGuard({ ...defaults.loop_guard, ...raw.loop_guard })
     : defaults.loop_guard;
 
+  const mention_mode = raw.mention_mode === undefined
+    ? defaults.mention_mode
+    : normalizeMentionMode(raw.mention_mode, `${name}.mention_mode`);
+
+  const per_author_daily_limit = raw.per_author_daily_limit === undefined
+    ? defaults.per_author_daily_limit
+    : assertPositiveInt(raw.per_author_daily_limit, `${name}.per_author_daily_limit`, {
+      min: 0,
+      max: MAX_PER_AUTHOR_DAILY_LIMIT,
+    });
+
+  const rate_limit_exempt_author_ids = raw.rate_limit_exempt_author_ids === undefined
+    ? defaults.rate_limit_exempt_author_ids.slice()
+    : normalizeSnowflakeList(raw.rate_limit_exempt_author_ids, `${name}.rate_limit_exempt_author_ids`);
+
   return {
     name,
     token_env,
@@ -109,6 +129,9 @@ function normalizeAgent(raw, defaults, index) {
     webhook_key_header,
     webhook_timeout_ms,
     loop_guard,
+    mention_mode,
+    per_author_daily_limit,
+    rate_limit_exempt_author_ids,
   };
 }
 
@@ -125,6 +148,18 @@ function normalizeConfig(raw) {
     ? DEFAULT_WEBHOOK_TIMEOUT_MS
     : assertPositiveInt(raw.webhook_timeout_ms, 'webhook_timeout_ms', { min: 1000, max: 120000 });
   const loop_guard = normalizeLoopGuard(raw.loop_guard || {});
+  const mention_mode = normalizeMentionMode(raw.mention_mode, 'mention_mode');
+  const per_author_daily_limit = raw.per_author_daily_limit === undefined
+    ? DEFAULT_PER_AUTHOR_DAILY_LIMIT
+    : assertPositiveInt(raw.per_author_daily_limit, 'per_author_daily_limit', {
+      min: 0,
+      max: MAX_PER_AUTHOR_DAILY_LIMIT,
+    });
+  const rate_limit_exempt_author_ids = normalizeSnowflakeList(
+    raw.rate_limit_exempt_author_ids,
+    'rate_limit_exempt_author_ids',
+  );
+  const data_dir = normalizeDataDir(raw.data_dir);
 
   if (!Array.isArray(raw.agents) || raw.agents.length === 0) {
     throw new Error('Config must list at least one agent');
@@ -136,6 +171,9 @@ function normalizeConfig(raw) {
     enable_dms,
     webhook_timeout_ms,
     loop_guard,
+    mention_mode,
+    per_author_daily_limit,
+    rate_limit_exempt_author_ids,
   };
 
   const agents = [];
@@ -156,6 +194,10 @@ function normalizeConfig(raw) {
     enable_dms,
     webhook_timeout_ms,
     loop_guard,
+    mention_mode,
+    per_author_daily_limit,
+    rate_limit_exempt_author_ids,
+    data_dir,
     agents,
   };
 }
@@ -186,6 +228,49 @@ function selectAgents(config, env = process.env) {
   return [agent];
 }
 
+function normalizeMentionMode(raw, label) {
+  if (raw === undefined || raw === null || raw === '') return DEFAULT_MENTION_MODE;
+  if (typeof raw !== 'string' || !MENTION_MODES.includes(raw)) {
+    throw new Error(`Invalid ${label}: expected ${MENTION_MODES.join(' or ')}`);
+  }
+  return raw;
+}
+
+function normalizeSnowflakeList(raw, label) {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) {
+    throw new Error(`${label} must be an array of snowflakes`);
+  }
+  const out = [];
+  for (const id of raw) {
+    if (!isSnowflake(id)) {
+      throw new Error(`${label} contains an invalid snowflake: ${JSON.stringify(id)}`);
+    }
+    out.push(String(id));
+  }
+  return out;
+}
+
+function normalizeDataDir(raw) {
+  if (raw === undefined || raw === null || raw === '') return DEFAULT_DATA_DIR;
+  if (typeof raw !== 'string' || raw.includes('\0')) {
+    throw new Error('Invalid data_dir');
+  }
+  return raw;
+}
+
+/**
+ * DATA_DIR env wins, then config data_dir, then ./data. Resolved against cwd.
+ */
+function resolveDataDir({ config, env = process.env, cwd = process.cwd() } = {}) {
+  const fromEnv = env && env.DATA_DIR;
+  if (fromEnv !== undefined && String(fromEnv).trim() !== '') {
+    return path.resolve(cwd, String(fromEnv));
+  }
+  const fromConfig = config && config.data_dir;
+  return path.resolve(cwd, fromConfig || DEFAULT_DATA_DIR);
+}
+
 function findAgent(config, name) {
   if (!name) {
     throw new Error('Agent name is required (--agent or DISCORD_AGENT)');
@@ -206,4 +291,5 @@ module.exports = {
   selectAgents,
   findAgent,
   resolveConfigPath,
+  resolveDataDir,
 };

@@ -6,6 +6,7 @@ node_modules/
 .DS_Store
 coverage/
 config/agents.json
+data/
 pm2.pid
 .idea/
 .vscode/

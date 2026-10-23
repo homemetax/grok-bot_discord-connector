@@ -48,6 +48,7 @@ function evaluateInbound(event, policy, loopGuard) {
     mentionedUserIds: event.mentionedUserIds || [],
     mentionedRoleIds: event.mentionedRoleIds || [],
     mentionEveryone: Boolean(event.mentionEveryone),
+    mentionMode: policy.mentionMode || 'user_or_role',
   });
   if (!mentioned) {
     return { action: 'ignore', reason: 'not_mentioned' };

@@ -2,6 +2,7 @@
 
 const { Client, GatewayIntentBits, Partials, Events } = require('discord.js');
 const { LoopGuard } = require('./loop-guard');
+const { AuthorDailyLimiter } = require('./author-daily');
 const { handleMessageCreate } = require('./handler');
 const { createLogger } = require('./logger');
 const { requireEnv } = require('./env');
@@ -26,7 +27,7 @@ function createClient() {
   });
 }
 
-function createRuntime(agent, { env = process.env, ClientImpl = Client } = {}) {
+function createRuntime(agent, { env = process.env, ClientImpl = Client, authorLimiter } = {}) {
   const log = createLogger(agent.name, env);
   const loopGuard = new LoopGuard({
     maxBotExchanges: agent.loop_guard.max_bot_exchanges,
@@ -38,7 +39,8 @@ function createRuntime(agent, { env = process.env, ClientImpl = Client } = {}) {
     ? createClient()
     : new ClientImpl({ intents: INTENTS, partials: PARTIALS });
 
-  const runtime = { agent, client, loopGuard, log, env };
+  const limiter = authorLimiter || new AuthorDailyLimiter({ filePath: null });
+  const runtime = { agent, client, loopGuard, log, env, authorLimiter: limiter };
 
   client.on(Events.ClientReady, (readyClient) => {
     log.info(`logged in as ${readyClient.user.tag} id=${readyClient.user.id}`);
