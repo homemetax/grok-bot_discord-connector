@@ -67,15 +67,17 @@ function normalizeAgent(raw, defaults, index) {
   const webhook_key_env = assertEnvName(raw.webhook_key_env, `${name}.webhook_key_env`);
 
   const allowed = raw.allowed_channel_ids;
-  if (!Array.isArray(allowed)) {
-    throw new Error(`${name}.allowed_channel_ids must be an array of channel snowflakes`);
-  }
-  const allowed_channel_ids = [];
-  for (const id of allowed) {
-    if (!isSnowflake(id)) {
-      throw new Error(`${name}.allowed_channel_ids contains an invalid snowflake: ${JSON.stringify(id)}`);
+  let allowed_channel_ids = [];
+  if (allowed !== undefined && allowed !== null) {
+    if (!Array.isArray(allowed)) {
+      throw new Error(`${name}.allowed_channel_ids must be an array of channel snowflakes when set`);
     }
-    allowed_channel_ids.push(String(id));
+    for (const id of allowed) {
+      if (!isSnowflake(id)) {
+        throw new Error(`${name}.allowed_channel_ids contains an invalid snowflake: ${JSON.stringify(id)}`);
+      }
+      allowed_channel_ids.push(String(id));
+    }
   }
 
   const history_limit = raw.history_limit === undefined

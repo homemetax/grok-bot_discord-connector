@@ -5,7 +5,7 @@
 ## Model
 
 - One Discord **application + bot token** per agent (Miya, Scar, Jack, Devos, Pip, …).
-- `config/agents.json` lists agents: `name`, token env var, webhook URL env var, webhook key env var, allowlisted channel IDs.
+- `config/agents.json` lists agents: `name`, token env var, webhook URL env var, webhook key env var, optional `allowed_channel_ids`.
 - Secrets live only in `process.env` (typically a `.env` file loaded into the environment). They are never committed or logged.
 - Hosting is a Linux box under **pm2** or **systemd**. No paid SaaS is required.
 - **Multi-client in one process** is the default (`node src/index.js` logs in every configured agent). **One process per bot** is `DISCORD_AGENT=<name>`.
@@ -30,7 +30,7 @@ Inbound never executes Discord message text. Outbound never invents permission c
 | `src/index.js` | Process entry: load env/config, start 1..N clients |
 | `src/config.js` | Validate config; `selectAgents` for multi vs single |
 | `src/mentions.js` | User/role mention detection; ignore @everyone/@here |
-| `src/allowlist.js` | Channel allowlist + thread parent + DM flag |
+| `src/allowlist.js` | Optional channel allowlist + thread parent + DM flag |
 | `src/loop-guard.js` | Bot-to-bot cap + cooldown per agent+channel/thread |
 | `src/inbound.js` | Pure gate used by the handler and tests |
 | `src/handler.js` | discord.js `messageCreate` → webhook POST |
@@ -51,6 +51,7 @@ Inbound never executes Discord message text. Outbound never invents permission c
 7. Invite permission integer is `326686067792` (documented in README). Connector code does not further restrict ManageRoles/ManageChannels.
 8. Webhook fetch uses `redirect: 'error'` so the sender key cannot follow a 30x.
 9. Threads are detected via `channel.isThread()` / thread types, never via “has parentId” (that would treat category children as threads).
+10. `allowed_channel_ids` missing or empty means any visible guild channel/thread; a non-empty list is an optional filter. DMs stay off unless `enable_dms`.
 
 ## Docs to keep in sync
 
