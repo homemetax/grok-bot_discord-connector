@@ -6,6 +6,24 @@ Each agent (Miya, Scar, Jack, Devos, Pip, …) is a **separate Discord applicati
 
 Runs on a Linux box under **pm2** or **systemd**. No paid hosted services.
 
+## Guides
+
+| Doc | What |
+| --- | --- |
+| [docs/QUICKSTART.md](docs/QUICKSTART.md) | 10-minute clone → mention path |
+| [docs/DISCORD_PORTAL.md](docs/DISCORD_PORTAL.md) | Private Discord app, intents, invite URL |
+| [docs/GROK_BOT_WEBHOOK.md](docs/GROK_BOT_WEBHOOK.md) | Routine `{type:webhook}`, payload, sample prompt |
+| [docs/CONFIG.md](docs/CONFIG.md) | Every config key (`mention_mode`, daily limit, allowlist, loop guard) |
+| [docs/OPERATIONS.md](docs/OPERATIONS.md) | pm2, logs, restart, 0 guilds / webhook 401 / gateway 4014 |
+| [docs/SECURITY.md](docs/SECURITY.md) | Secrets, untrusted content, invite permissions |
+
+```bash
+npm run setup                 # Node >= 20, npm ci, local config (no secrets written)
+npm run add-agent -- --name pip --prefix PIP
+npm run start:pm2             # one pm2 process per agent; does not pm2 save
+npm start                     # all agents in one Node process
+```
+
 ## Requirements
 
 - Node.js 18.18+ (20 or 22 recommended)
@@ -17,17 +35,20 @@ Runs on a Linux box under **pm2** or **systemd**. No paid hosted services.
 ```bash
 git clone <this-repo>
 cd grok-bot_discord-connector
-npm install
-cp config/agents.example.json config/agents.json
-cp .env.example .env
-# edit config/agents.json (channel IDs) and .env (tokens, webhook URLs, keys)
-node src/index.js
+npm run setup
+# or: npm install && cp config/agents.example.json config/agents.json && cp .env.example .env
+# edit .env (tokens, webhook URLs, keys) — never put secrets in JSON
+npm start
 ```
 
-- **All agents in one process:** leave `DISCORD_AGENT` unset.
-- **One process per bot:** `DISCORD_AGENT=miya node src/index.js`
+Teammate packaging: [docs/QUICKSTART.md](docs/QUICKSTART.md). `scripts/setup.sh` / `add-agent.sh` / `start.sh` never write secret values. `start.sh` starts one pm2 process per agent and does **not** run `pm2 save`.
+
+- **All agents in one process:** leave `DISCORD_AGENT` unset (`npm start`).
+- **One process per bot:** `npm run start:pm2` or `DISCORD_AGENT=miya node src/index.js`
 
 Copy `config/agents.json` is gitignored so production channel IDs stay local. The committed example is `config/agents.example.json`.
+
+Full Portal clicks (private bot: **Installation → Install Link = None**, then untick **Public Bot**): [docs/DISCORD_PORTAL.md](docs/DISCORD_PORTAL.md).
 
 ## Per-agent Discord Developer Portal steps
 
@@ -37,7 +58,7 @@ Repeat for **each** agent (Miya, Scar, Jack, Devos, Pip, …).
 2. **Bot**
    - Reset / copy the **token**. Store it in the env var named in config (`MIYA_DISCORD_TOKEN`, …). Never put it in JSON or git.
    - Privileged Gateway Intents: enable **Message Content Intent**.
-   - Optional: disable “Public Bot” if the invite should stay private.
+   - Private bot: **Installation → Install Link = None**, then untick **Public Bot**. See [docs/DISCORD_PORTAL.md](docs/DISCORD_PORTAL.md).
 3. **Bot → Privileged Gateway Intents** (same page): Message Content must be on. This repo also requests (not privileged) Guilds, Guild Messages, Guild Message Reactions, Direct Messages.
 4. **OAuth2 → URL Generator**
    - Scopes: `bot`
@@ -246,14 +267,24 @@ Exit codes: `0` ok, `1` usage/other, `2` 401, `3` 403, `4` 429.
 
 ## Hosting
 
-### pm2
+See [docs/OPERATIONS.md](docs/OPERATIONS.md).
+
+### pm2 (one process per agent)
+
+```bash
+npm run start:pm2
+```
+
+`scripts/start.sh` starts `grok-discord-<name>` with `DISCORD_AGENT=<name>` for each entry in `config/agents.json`. It does **not** run `pm2 save` (secrets stay out of a pm2 dump). Secrets come from the environment; `src/index.js` loads `.env`.
+
+### pm2 (all agents in one process)
 
 ```bash
 pm2 start deploy/ecosystem.config.js
-pm2 save
+# do not pm2 save if that dump would persist env secrets
 ```
 
-Default app `grok-discord` runs every agent in one process. To run one process per bot, copy the commented example in `deploy/ecosystem.config.js` and set `DISCORD_AGENT`.
+Default app `grok-discord` runs every agent in one process. To run one process per bot by hand, copy the commented example in `deploy/ecosystem.config.js` and set `DISCORD_AGENT`.
 
 ### systemd (all agents)
 
@@ -276,7 +307,7 @@ sudo systemctl enable --now grok-discord@miya grok-discord@scar
 
 ## Security
 
-- **Tokens, webhook URLs, and sender keys** live in the environment only. Logs redact values of env vars whose names look like tokens, secrets, passwords, or webhooks (including `*_WEBHOOK_URL`).
+- **Tokens, webhook URLs, and sender keys** live in the environment only. Packaging scripts never write those values. Logs redact values of env vars whose names look like tokens, secrets, passwords, or webhooks (including `*_WEBHOOK_URL`). More: [docs/SECURITY.md](docs/SECURITY.md).
 - **`.env` is gitignored.** Commit `.env.example` and `config/agents.example.json` only. The CLI refuses to `--file` attach `.env*` / private keys, or any file whose bytes contain a secret env value.
 - **Validate inputs:** snowflakes, agent names, header names (no CR/LF), history limits, URLs, emoji identifiers. CLI rejects malformed ids before calling Discord. Flag names cannot be `__proto__` / `constructor`.
 - **Untrusted content:** Discord `content` is JSON data. It is never passed to a shell, `eval`, or dynamic `require`. Do not pipe it to a shell on the Grok Bot side either.
@@ -301,6 +332,8 @@ Required coverage: mention detection (`user_or_role` / `user_only`), allowlist (
 ```
 bin/discord.js              outbound CLI
 src/index.js                inbound gateway process
+scripts/                    setup, add-agent, start:pm2 (no secrets written)
+docs/                       teammate guides (see table at the top)
 config/agents.example.json  committed example
 data/                       persisted counts (gitignored; created at runtime)
 deploy/                     pm2 + systemd units
