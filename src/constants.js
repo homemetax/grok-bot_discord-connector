@@ -35,7 +35,7 @@ const AGENT_NAME_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const ENV_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const HEADER_NAME_RE = /^[A-Za-z0-9-]+$/;
 
-const DEFAULT_WEBHOOK_KEY_HEADER = 'X-Webhook-Key';
+const DEFAULT_WEBHOOK_KEY_HEADER = 'Authorization';
 const DEFAULT_HISTORY_LIMIT = 20;
 const DEFAULT_WEBHOOK_TIMEOUT_MS = 30000;
 const DEFAULT_LOOP_GUARD = Object.freeze({

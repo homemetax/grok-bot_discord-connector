@@ -37,10 +37,22 @@ async function readBody(response) {
 }
 
 /**
+ * Grok Bot routines expect Authorization: Bearer <key>.
+ * Other header names get the raw key. Do not double-prefix Bearer.
+ */
+function formatSenderKey(headerName, key) {
+  if (String(headerName).toLowerCase() === 'authorization' && !key.startsWith('Bearer ')) {
+    return `Bearer ${key}`;
+  }
+  return key;
+}
+
+/**
  * POST JSON to the agent's Grok Bot routine webhook.
  * Retries 429 using Retry-After / retry_after (capped). Does not retry 401/403.
  * Does not follow redirects (would leak the sender key to a third party).
  * The sender key is sent in the configured header and is never logged.
+ * Default header is Authorization, with a Bearer prefix unless the key already has one.
  */
 async function postWebhook({
   url,
@@ -56,7 +68,7 @@ async function postWebhook({
   }
   const endpoint = assertHttpUrl(url, 'webhook URL');
   const safeHeader = assertHeaderName(headerName);
-  const safeKey = assertHeaderValue(key, 'Webhook sender key');
+  const safeKey = formatSenderKey(safeHeader, assertHeaderValue(key, 'Webhook sender key'));
 
   const body = JSON.stringify(payload);
   let lastError;
@@ -135,4 +147,4 @@ async function postWebhook({
   throw lastError || new Error('Webhook request failed');
 }
 
-module.exports = { postWebhook, retryAfterMs, capWaitMs };
+module.exports = { postWebhook, retryAfterMs, capWaitMs, formatSenderKey };

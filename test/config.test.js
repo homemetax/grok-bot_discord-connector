@@ -5,7 +5,6 @@ const assert = require('node:assert/strict');
 const { normalizeConfig, selectAgents } = require('../src/config');
 
 const sample = {
-  webhook_key_header: 'X-Webhook-Key',
   history_limit: 20,
   agents: [
     {
@@ -30,7 +29,7 @@ describe('normalizeConfig', () => {
     const cfg = normalizeConfig(sample);
     assert.equal(cfg.agents.length, 2);
     assert.equal(cfg.agents[0].name, 'miya');
-    assert.equal(cfg.webhook_key_header, 'X-Webhook-Key');
+    assert.equal(cfg.webhook_key_header, 'Authorization');
     assert.equal(cfg.loop_guard.max_bot_exchanges, 6);
   });
 
@@ -52,6 +51,19 @@ describe('normalizeConfig', () => {
 
   it('rejects empty agents list', () => {
     assert.throws(() => normalizeConfig({ agents: [] }));
+  });
+
+  it('defaults webhook_key_header to Authorization', () => {
+    const cfg = normalizeConfig({
+      agents: [{
+        name: 'miya',
+        token_env: 'MIYA_DISCORD_TOKEN',
+        webhook_url_env: 'MIYA_WEBHOOK_URL',
+        webhook_key_env: 'MIYA_WEBHOOK_KEY',
+      }],
+    });
+    assert.equal(cfg.webhook_key_header, 'Authorization');
+    assert.equal(cfg.agents[0].webhook_key_header, 'Authorization');
   });
 
   it('accepts a missing or empty allowed_channel_ids list', () => {
