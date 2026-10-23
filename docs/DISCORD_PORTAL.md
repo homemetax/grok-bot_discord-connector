@@ -1,6 +1,6 @@
 # Discord Developer Portal (one app per agent)
 
-Each Grok Bot agent is a **separate Discord application** with its own bot token. Repeat this page for Miya, Scar, Jack, Devos, Pip, and any new agent.
+Each Grok Bot agent is a **separate Discord application** with its own bot token. Repeat this page for GrokBot, agent-1, agent-2, and any new agent.
 
 Portal: [https://discord.com/developers/applications](https://discord.com/developers/applications)
 
@@ -30,7 +30,7 @@ If Discord errors with “Cannot have install fields on a private application”
 Still on **Bot**:
 
 1. **Reset Token** → copy it once.
-2. Store it in the env var named in `config/agents.json` (`MIYA_DISCORD_TOKEN`, …).
+2. Store it in the env var named in `config/agents.json` (`GROKBOT_DISCORD_TOKEN`, …).
 3. Never put the token in JSON, git, chat, or a pm2 dump.
 
 A leaked token is a full bot login. Reset it in the Portal and update env.

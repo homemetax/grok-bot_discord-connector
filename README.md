@@ -2,7 +2,7 @@
 
 Node.js **discord.js v14** connector that bridges Grok Bot agents to Discord.
 
-Each agent (Miya, Scar, Jack, Devos, Pip, …) is a **separate Discord application** with its own bot token. This process receives `MESSAGE_CREATE` events, and when a message is meant for that bot it POSTs a JSON payload to that agent's Grok Bot **routine webhook**. Agents send Discord actions back through a small REST CLI in this repo.
+Each agent (GrokBot, agent-1, agent-2, …) is a **separate Discord application** with its own bot token. This process receives `MESSAGE_CREATE` events, and when a message is meant for that bot it POSTs a JSON payload to that agent's Grok Bot **routine webhook**. Agents send Discord actions back through a small REST CLI in this repo.
 
 Runs on a Linux box under **pm2** or **systemd**. No paid hosted services.
 
@@ -20,7 +20,7 @@ Runs on a Linux box under **pm2** or **systemd**. No paid hosted services.
 
 ```bash
 npm run setup                 # Node >= 20, npm ci, local config (no secrets written)
-npm run add-agent -- --name pip --prefix PIP
+npm run add-agent -- --name agent-1 --prefix AGENT_1
 npm run start:pm2             # one pm2 process per agent; does not pm2 save
 npm start                     # all agents in one Node process
 ```
@@ -45,7 +45,7 @@ npm start
 Teammate packaging: [docs/QUICKSTART.md](docs/QUICKSTART.md). `scripts/setup.sh` / `add-agent.sh` / `start.sh` never write secret values. `start.sh` starts one pm2 process per agent and does **not** run `pm2 save`.
 
 - **All agents in one process:** leave `DISCORD_AGENT` unset (`npm start`).
-- **One process per bot:** `npm run start:pm2` or `DISCORD_AGENT=miya node src/index.js`
+- **One process per bot:** `npm run start:pm2` or `DISCORD_AGENT=GrokBot node src/index.js`
 
 Copy `config/agents.json` is gitignored so production channel IDs stay local. The committed example is `config/agents.example.json`.
 
@@ -53,11 +53,11 @@ Full Portal clicks (private bot: **Installation → Install Link = None**, then 
 
 ## Per-agent Discord Developer Portal steps
 
-Repeat for **each** agent (Miya, Scar, Jack, Devos, Pip, …).
+Repeat for **each** agent (GrokBot, agent-1, agent-2, …).
 
 1. [Discord Developer Portal](https://discord.com/developers/applications) → **New Application** → name it after the agent.
 2. **Bot**
-   - Reset / copy the **token**. Store it in the env var named in config (`MIYA_DISCORD_TOKEN`, …). Never put it in JSON or git.
+   - Reset / copy the **token**. Store it in the env var named in config (`GROKBOT_DISCORD_TOKEN`, …). Never put it in JSON or git.
    - Privileged Gateway Intents: enable **Message Content Intent**.
    - Private bot: **Installation → Install Link = None**, then untick **Public Bot**. See [docs/DISCORD_PORTAL.md](docs/DISCORD_PORTAL.md).
 3. **Bot → Privileged Gateway Intents** (same page): Message Content must be on. This repo also requests (not privileged) Guilds, Guild Messages, Guild Message Reactions, Direct Messages.
@@ -142,12 +142,12 @@ Header **name** is config (`webhook_key_header`, default `Authorization`), not a
   "data_dir": "./data",
   "agents": [
     {
-      "name": "miya",
-      "token_env": "MIYA_DISCORD_TOKEN",
-      "webhook_url_env": "MIYA_WEBHOOK_URL",
-      "webhook_key_env": "MIYA_WEBHOOK_KEY",
+      "name": "GrokBot",
+      "token_env": "GROKBOT_DISCORD_TOKEN",
+      "webhook_url_env": "GROKBOT_WEBHOOK_URL",
+      "webhook_key_env": "GROKBOT_WEBHOOK_KEY",
       "per_author_daily_limit": 1,
-      "rate_limit_exempt_author_ids": ["358829341020520470"],
+      "rate_limit_exempt_author_ids": ["200000000000000001"],
       "mention_mode": "user_only"
     }
   ]
@@ -185,7 +185,7 @@ Discord message text is **untrusted data**. It is copied into JSON only. It is n
 
 ```json
 {
-  "agent": "miya",
+  "agent": "GrokBot",
   "guild_id": "555555555555555555",
   "channel_id": "100000000000000001",
   "thread_id": "100000000000000003",
@@ -234,26 +234,26 @@ Discord message text is **untrusted data**. It is copied into JSON only. It is n
 Agents (or operators) send Discord actions with the agent's token from env:
 
 ```bash
-node bin/discord.js send --agent miya --channel CHANNEL_ID --content "hello"
-node bin/discord.js reply --agent miya --channel CHANNEL_OR_THREAD_ID --message MSG_ID --content "…"
-node bin/discord.js react --agent miya --channel ID --message ID --emoji "👍"
-node bin/discord.js react --agent miya --channel ID --message ID --emoji "👍" --remove
-node bin/discord.js thread --agent miya --channel ID --message ID --name "topic"
-node bin/discord.js history --agent miya --channel ID --limit 50
-node bin/discord.js upload --agent miya --channel ID --content "see file" --file ./shot.png
-node bin/discord.js edit --agent miya --channel ID --message ID --content "corrected"
-node bin/discord.js delete --agent miya --channel ID --message ID
-node bin/discord.js me --agent miya
+node bin/discord.js send --agent GrokBot --channel CHANNEL_ID --content "hello"
+node bin/discord.js reply --agent GrokBot --channel CHANNEL_OR_THREAD_ID --message MSG_ID --content "…"
+node bin/discord.js react --agent GrokBot --channel ID --message ID --emoji "👍"
+node bin/discord.js react --agent GrokBot --channel ID --message ID --emoji "👍" --remove
+node bin/discord.js thread --agent GrokBot --channel ID --message ID --name "topic"
+node bin/discord.js history --agent GrokBot --channel ID --limit 50
+node bin/discord.js upload --agent GrokBot --channel ID --content "see file" --file ./shot.png
+node bin/discord.js edit --agent GrokBot --channel ID --message ID --content "corrected"
+node bin/discord.js delete --agent GrokBot --channel ID --message ID
+node bin/discord.js me --agent GrokBot
 
-node bin/discord.js channel list --agent miya --guild GUILD_ID
-node bin/discord.js channel create --agent miya --guild GUILD_ID --name notes --type 0
-node bin/discord.js channel edit --agent miya --channel ID --topic "…"
-node bin/discord.js channel delete --agent miya --channel ID
+node bin/discord.js channel list --agent GrokBot --guild GUILD_ID
+node bin/discord.js channel create --agent GrokBot --guild GUILD_ID --name notes --type 0
+node bin/discord.js channel edit --agent GrokBot --channel ID --topic "…"
+node bin/discord.js channel delete --agent GrokBot --channel ID
 
-node bin/discord.js role list --agent miya --guild GUILD_ID
-node bin/discord.js role create --agent miya --guild GUILD_ID --name mods --permissions 0
-node bin/discord.js role add --agent miya --guild GUILD_ID --user USER_ID --role ROLE_ID
-node bin/discord.js role remove --agent miya --guild GUILD_ID --user USER_ID --role ROLE_ID
+node bin/discord.js role list --agent GrokBot --guild GUILD_ID
+node bin/discord.js role create --agent GrokBot --guild GUILD_ID --name mods --permissions 0
+node bin/discord.js role add --agent GrokBot --guild GUILD_ID --user USER_ID --role ROLE_ID
+node bin/discord.js role remove --agent GrokBot --guild GUILD_ID --user USER_ID --role ROLE_ID
 ```
 
 - `--agent` can be omitted when `DISCORD_AGENT` is set.
@@ -301,7 +301,7 @@ sudo systemctl enable --now grok-discord
 
 ```bash
 sudo cp deploy/grok-discord@.service /etc/systemd/system/
-sudo systemctl enable --now grok-discord@miya grok-discord@scar
+sudo systemctl enable --now grok-discord@GrokBot grok-discord@agent-1
 ```
 
 `EnvironmentFile` loads `.env`. Do not enable services that dump the full environment on crash.

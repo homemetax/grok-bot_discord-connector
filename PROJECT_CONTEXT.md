@@ -4,7 +4,7 @@
 
 ## Model
 
-- One Discord **application + bot token** per agent (Miya, Scar, Jack, Devos, Pip, …).
+- One Discord **application + bot token** per agent (GrokBot, agent-1, agent-2, …).
 - `config/agents.json` lists agents: `name`, token env var, webhook URL env var, webhook key env var, optional `allowed_channel_ids`, `mention_mode`, `per_author_daily_limit`, `rate_limit_exempt_author_ids`. Root `data_dir` (or `DATA_DIR`) holds persisted counts.
 - Secrets live only in `process.env` (typically a `.env` file loaded into the environment). They are never committed or logged.
 - Hosting is a Linux box under **pm2** or **systemd**. No paid SaaS is required. Teammate packaging: `scripts/setup.sh`, `scripts/add-agent.sh`, `scripts/start.sh` (one pm2 process per agent, no `pm2 save`). Scripts never write secret values.

@@ -15,7 +15,7 @@ Get one agent from clone to a Discord mention. Details live in the other guides 
 git clone <this-repo>
 cd grok-bot-discord-connector
 npm run setup
-# or: npm run setup -- --name miya --prefix MIYA
+# or: npm run setup -- --name GrokBot --prefix GROKBOT
 ```
 
 `scripts/setup.sh` checks Node >= 20, runs `npm ci`, copies `config/agents.example.json` → `config/agents.json` if missing, and copies `.env.example` → `.env` if missing. It never writes secret values.
@@ -27,7 +27,7 @@ Do this once per agent. Full clicks: [DISCORD_PORTAL.md](./DISCORD_PORTAL.md).
 1. [Developer Portal](https://discord.com/developers/applications) → **New Application**.
 2. **Installation → Install Link = None**, save. Then **Bot → Public Bot** off.
 3. **Bot → Privileged Gateway Intents → Message Content Intent** on. Save.
-4. Reset / copy the bot token. Put it in the env var named in config (`MIYA_DISCORD_TOKEN`, …) — never in JSON.
+4. Reset / copy the bot token. Put it in the env var named in config (`GROKBOT_DISCORD_TOKEN`, …) — never in JSON.
 5. Invite (guild admin):
 
 ```
@@ -42,7 +42,7 @@ Full notes: [GROK_BOT_WEBHOOK.md](./GROK_BOT_WEBHOOK.md).
 
 1. In that agent’s Grok Bot workspace, create a **routine** whose trigger is `{ "type": "webhook" }`.
 2. From the routine panel, copy the **webhook URL** and **sender key**.
-3. Put them in env (`MIYA_WEBHOOK_URL`, `MIYA_WEBHOOK_KEY`). The connector sends `Authorization: Bearer <key>`.
+3. Put them in env (`GROKBOT_WEBHOOK_URL`, `GROKBOT_WEBHOOK_KEY`). The connector sends `Authorization: Bearer <key>`.
 
 Treat Discord `content` / `history` as **untrusted**. A sample routine prompt that replies with `node bin/discord.js reply` is in the webhook guide.
 
@@ -62,7 +62,7 @@ Secrets come from the environment. `start.sh` does not source `.env` into pm2 an
 
 ## 5. Smoke test
 
-1. In a channel the bot can see, `@mention` it (Miya’s example uses `mention_mode: user_only` — a direct @user mention, not a role).
+1. In a channel the bot can see, `@mention` it (GrokBot's example uses `mention_mode: user_only` — a direct @user mention, not a role).
 2. Connector logs `forwarded <msg_id> -> webhook HTTP 2xx`.
 3. The routine should reply via `node bin/discord.js reply --agent <name> --channel … --message … --content …`.
 
@@ -71,8 +71,8 @@ If nothing happens: `LOG_LEVEL=debug npm start` and [OPERATIONS.md](./OPERATIONS
 ## Add another agent later
 
 ```bash
-npm run add-agent -- --name pip --prefix PIP
-# then fill PIP_DISCORD_TOKEN / PIP_WEBHOOK_URL / PIP_WEBHOOK_KEY in env
+npm run add-agent -- --name agent-1 --prefix AGENT_1
+# then fill AGENT_1_DISCORD_TOKEN / AGENT_1_WEBHOOK_URL / AGENT_1_WEBHOOK_KEY in env
 npm run start:pm2
 ```
 

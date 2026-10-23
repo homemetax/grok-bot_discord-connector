@@ -69,16 +69,16 @@ Own messages are dropped before the loop guard.
 
 When `per_author_daily_limit` > 0, each successful inbound **decision to forward** increments that author on that agent. Window is rolling 24 hours. On cap: no webhook POST, no Discord reply, log `rate_limited` at debug. Counts persist atomically as `<data_dir>/author-daily.json` (gitignored).
 
-Example (Miya in `config/agents.example.json`):
+Example (GrokBot in `config/agents.example.json`):
 
 ```json
 {
-  "name": "miya",
-  "token_env": "MIYA_DISCORD_TOKEN",
-  "webhook_url_env": "MIYA_WEBHOOK_URL",
-  "webhook_key_env": "MIYA_WEBHOOK_KEY",
+  "name": "GrokBot",
+  "token_env": "GROKBOT_DISCORD_TOKEN",
+  "webhook_url_env": "GROKBOT_WEBHOOK_URL",
+  "webhook_key_env": "GROKBOT_WEBHOOK_KEY",
   "per_author_daily_limit": 1,
-  "rate_limit_exempt_author_ids": ["358829341020520470"],
+  "rate_limit_exempt_author_ids": ["200000000000000001"],
   "mention_mode": "user_only"
 }
 ```
@@ -86,13 +86,13 @@ Example (Miya in `config/agents.example.json`):
 ## Adding an agent
 
 ```bash
-npm run add-agent -- --name pip --prefix PIP
+npm run add-agent -- --name agent-1 --prefix AGENT_1
 ```
 
-Writes env **names** only. Then set `PIP_DISCORD_TOKEN`, `PIP_WEBHOOK_URL`, `PIP_WEBHOOK_KEY` in the environment.
+Writes env **names** only. Then set `AGENT_1_DISCORD_TOKEN`, `AGENT_1_WEBHOOK_URL`, `AGENT_1_WEBHOOK_KEY` in the environment.
 
 ## Multi-client vs one process per bot
 
 - `DISCORD_AGENT` unset → `node src/index.js` logs in every agent (one process).
-- `DISCORD_AGENT=miya` → that agent only.
+- `DISCORD_AGENT=GrokBot` → that agent only.
 - `npm run start:pm2` starts **one pm2 process per agent** from the config (does not `pm2 save`).

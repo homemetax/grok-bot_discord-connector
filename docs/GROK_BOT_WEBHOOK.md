@@ -14,7 +14,7 @@ In the Grok Bot owner / routine panel, for **each** agent:
 ```
 
 3. Open the routine’s webhook panel and copy:
-   - **Webhook URL** → env `*_WEBHOOK_URL` (e.g. `MIYA_WEBHOOK_URL`)
+   - **Webhook URL** → env `*_WEBHOOK_URL` (e.g. `GROKBOT_WEBHOOK_URL`)
    - **Sender key** → env `*_WEBHOOK_KEY`
 
 Do not paste URL or key into `config/agents.json`. The JSON only stores the **env var names**.
@@ -39,7 +39,7 @@ POSTs use `redirect: 'error'` so a 30x cannot leak the sender-key header to anot
 
 ```json
 {
-  "agent": "miya",
+  "agent": "GrokBot",
   "guild_id": "555555555555555555",
   "channel_id": "100000000000000001",
   "thread_id": "100000000000000003",

@@ -9,7 +9,7 @@ describe('parseArgs', () => {
     const args = parseArgs([
       'send',
       '--agent',
-      'miya',
+      'GrokBot',
       '--channel',
       '123456789012345678',
       '--content=hello',
@@ -19,7 +19,7 @@ describe('parseArgs', () => {
       'b.png',
     ]);
     assert.deepEqual(args._, ['send']);
-    assert.equal(args.flags.agent, 'miya');
+    assert.equal(args.flags.agent, 'GrokBot');
     assert.equal(args.flags.content, 'hello');
     assert.deepEqual(args.flags.file, ['a.png', 'b.png']);
   });

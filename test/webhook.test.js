@@ -27,7 +27,7 @@ describe('postWebhook', () => {
       url: 'https://example.test/hook',
       key: 'super-secret-key',
       headerName: 'X-Webhook-Key',
-      payload: { agent: 'miya' },
+      payload: { agent: 'GrokBot' },
       fetchImpl,
       maxRetries: 0,
     });
@@ -35,7 +35,7 @@ describe('postWebhook', () => {
     assert.equal(calls[0].opts.headers['X-Webhook-Key'], 'super-secret-key');
     assert.equal(calls[0].opts.headers['Content-Type'], 'application/json');
     assert.equal(calls[0].opts.redirect, 'error');
-    assert.equal(JSON.parse(calls[0].opts.body).agent, 'miya');
+    assert.equal(JSON.parse(calls[0].opts.body).agent, 'GrokBot');
   });
 
   it('sends Authorization: Bearer <key> by default style', async () => {
