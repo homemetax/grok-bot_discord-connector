@@ -86,6 +86,7 @@ async function handleMessageCreate(runtime, message) {
     allowedChannelIds: agent.allowed_channel_ids,
     enableDms: agent.enable_dms,
     botRoleIds: botRoleIdsForMessage(client, message),
+    mentionMode: agent.mention_mode,
   };
 
   const decision = evaluateInbound(event, policy, loopGuard);
@@ -102,6 +103,24 @@ async function handleMessageCreate(runtime, message) {
   } catch (err) {
     log.error(err.message);
     return;
+  }
+
+  if (agent.per_author_daily_limit > 0) {
+    const limiter = runtime.authorLimiter;
+    if (!limiter) {
+      log.debug(`ignore ${message.id}: rate_limited`);
+      return;
+    }
+    const consumed = limiter.tryConsume({
+      agentName: agent.name,
+      authorId: event.authorId,
+      limit: agent.per_author_daily_limit,
+      exemptIds: agent.rate_limit_exempt_author_ids,
+    });
+    if (!consumed.allowed) {
+      log.debug(`ignore ${message.id}: rate_limited`);
+      return;
+    }
   }
 
   if (event.authorIsBot) {

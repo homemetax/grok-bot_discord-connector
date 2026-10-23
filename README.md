@@ -96,6 +96,7 @@ Secrets are read **only** from `process.env`. `.env` is gitignored. `.env.exampl
 | --- | --- | --- |
 | `CONFIG_PATH` | no | Config JSON path (default `./config/agents.json`) |
 | `DISCORD_AGENT` | no | If set, run/CLI-default that agent only |
+| `DATA_DIR` | no | Persist directory (default `./data`, gitignored). Overrides config `data_dir`. |
 | `LOG_LEVEL=debug` | no | Verbose ignore reasons |
 | `<NAME>_DISCORD_TOKEN` | yes per agent | Bot token |
 | `<NAME>_WEBHOOK_URL` | yes per agent | Grok Bot routine webhook URL |
@@ -116,20 +117,28 @@ Header **name** is config (`webhook_key_header`, default `Authorization`), not a
     "window_ms": 120000,
     "cooldown_ms": 8000
   },
+  "data_dir": "./data",
   "agents": [
     {
       "name": "miya",
       "token_env": "MIYA_DISCORD_TOKEN",
       "webhook_url_env": "MIYA_WEBHOOK_URL",
-      "webhook_key_env": "MIYA_WEBHOOK_KEY"
+      "webhook_key_env": "MIYA_WEBHOOK_KEY",
+      "per_author_daily_limit": 1,
+      "rate_limit_exempt_author_ids": ["358829341020520470"],
+      "mention_mode": "user_only"
     }
   ]
 }
 ```
 
-Per-agent overrides: `enable_dms`, `history_limit` (1–100), `webhook_key_header`, `webhook_timeout_ms`, `loop_guard`, `allowed_channel_ids`.
+Per-agent overrides: `enable_dms`, `history_limit` (1–100), `webhook_key_header`, `webhook_timeout_ms`, `loop_guard`, `allowed_channel_ids`, `mention_mode`, `per_author_daily_limit`, `rate_limit_exempt_author_ids`.
 
 `allowed_channel_ids` is **optional**. Missing or `[]` means the bot responds in any guild channel or thread it can see; Discord role permissions and channel overwrites are the access control. A non-empty list is an extra filter: only those channels, plus threads (and forum posts) whose **parent** is listed. DMs stay off unless `enable_dms` is true.
+
+`mention_mode` is `user_or_role` (default) or `user_only`. `user_or_role` matches a direct @user mention of the bot **or** a mention of one of the bot's roles. `user_only` requires a direct @user mention; role mentions are ignored.
+
+`per_author_daily_limit` is a per-agent, per-author cap on **forwards** over a rolling 24-hour window. `0` (default) disables the cap. `rate_limit_exempt_author_ids` is a list of author snowflakes that skip the cap and are not counted. When the limit is hit the connector does **not** POST the webhook and does **not** send anything to Discord; it only logs `rate_limited` at debug. Counts persist in `DATA_DIR` / `data_dir` (default `./data`, gitignored) as `author-daily.json`, written atomically (temp file + rename) so they survive restarts.
 
 ## Inbound behavior
 
@@ -138,10 +147,11 @@ On `MESSAGE_CREATE` for that agent's client:
 1. Ignore the bot's **own** messages.
 2. Ignore DMs unless `enable_dms`.
 3. If `allowed_channel_ids` is set and non-empty, ignore guild messages whose channel (or thread parent) is not listed. If it is missing or empty, accept any guild channel or thread the bot can see.
-4. Act only if `message.mentions.users` contains this bot's user id **or** `mention_roles` contains one of this bot's roles. **@everyone / @here are not triggers** (`mention_everyone` is ignored as a mention of the bot). The @everyone role id (guild id) is not treated as a bot role.
+4. Act only if the bot is mentioned. Default `mention_mode` `user_or_role`: `message.mentions.users` contains this bot's user id **or** `mention_roles` contains one of this bot's roles. `user_only`: only a direct @user mention of the bot counts; role mentions are ignored. **@everyone / @here are not triggers** (`mention_everyone` is ignored as a mention of the bot). The @everyone role id (guild id) is not treated as a bot role.
 5. Humans and other bots are both accepted. Bot-to-bot traffic is limited **per agent + channel/thread**: a sliding-window cap and a cooldown. A human message resets that chain.
-6. Fetch up to `history_limit` prior messages in that channel/thread (Discord max 100).
-7. POST JSON to the agent's webhook URL. Default header is `Authorization: Bearer <sender key>` (`webhook_key_header` is configurable).
+6. If `per_author_daily_limit` is greater than 0, count this forward for that author on this agent over a rolling 24h window. Exempt author ids skip the cap. When the cap is hit, stop: log `rate_limited` at debug and do not POST or reply on Discord.
+7. Fetch up to `history_limit` prior messages in that channel/thread (Discord max 100).
+8. POST JSON to the agent's webhook URL. Default header is `Authorization: Bearer <sender key>` (`webhook_key_header` is configurable).
 
 Context is per channel or thread (the Discord channel id the message arrived in). Payload `channel_id` is the parent text/forum channel when the message is in a thread; `thread_id` is the thread id. When calling the CLI to reply in a thread, pass `thread_id` as `--channel`.
 
@@ -276,6 +286,7 @@ sudo systemctl enable --now grok-discord@miya grok-discord@scar
 - **ManageRoles / ManageChannels:** included in the invite integer. A bot can only assign roles **below** its highest role, and cannot grant permissions it does not have. Moving the bot role to the top of the list, or leaving ManageRoles on a publicly invitable bot, is a guild-compromise risk. Prefer a dedicated bot role, deny those permissions in channel overwrites where unused, and keep tokens on the host only.
 - **DMs** are off unless you set `enable_dms`.
 - **Loop guard** stops two bots from bouncing mentions forever in the same thread/channel.
+- **Per-author daily limit** (optional): `per_author_daily_limit` > 0 caps forwards per author per agent on a rolling 24h window. Exempt snowflakes in `rate_limit_exempt_author_ids` skip the cap. Hitting the cap is silent on Discord (debug `rate_limited` only). Counts live in gitignored `./data/author-daily.json` (or `DATA_DIR`).
 
 ## Tests
 
@@ -283,7 +294,7 @@ sudo systemctl enable --now grok-discord@miya grok-discord@scar
 npm test
 ```
 
-Required coverage: mention detection, allowlist (optional/open vs filter, thread parent, DMs stay off), loop guard, message splitting. Also config selection for multi-client vs `DISCORD_AGENT`.
+Required coverage: mention detection (`user_or_role` / `user_only`), allowlist (optional/open vs filter, thread parent, DMs stay off), loop guard, per-author daily limit (cap, exempt, 24h window, persist/reload), message splitting. Also config selection for multi-client vs `DISCORD_AGENT`.
 
 ## Layout
 
@@ -291,6 +302,7 @@ Required coverage: mention detection, allowlist (optional/open vs filter, thread
 bin/discord.js              outbound CLI
 src/index.js                inbound gateway process
 config/agents.example.json  committed example
+data/                       persisted counts (gitignored; created at runtime)
 deploy/                     pm2 + systemd units
 test/                       node:test unit tests
 ```

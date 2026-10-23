@@ -3,9 +3,11 @@
 /**
  * Mention detection for inbound MESSAGE_CREATE.
  *
- * Triggers only on an explicit user mention of this bot or an explicit
- * mention of one of this bot's roles. @everyone and @here are never
- * treated as a mention of the bot, even if mention_everyone is true.
+ * Triggers only on an explicit user mention of this bot or (when
+ * mentionMode is `user_or_role`, the default) an explicit mention of
+ * one of this bot's roles. `user_only` ignores role mentions.
+ * @everyone and @here are never treated as a mention of the bot,
+ * even if mention_everyone is true.
  *
  * The @everyone role id (guild id) is excluded from bot roles.
  */
@@ -32,6 +34,7 @@ function isBotMentioned({
   mentionedUserIds = [],
   mentionedRoleIds = [],
   mentionEveryone = false, // accepted for callers; never used as a trigger
+  mentionMode = 'user_or_role',
 } = {}) {
   void mentionEveryone;
   if (botUserId == null || botUserId === '') return false;
@@ -40,6 +43,8 @@ function isBotMentioned({
   for (const id of mentionedUserIds || []) {
     if (id != null && String(id) === botId) return true;
   }
+
+  if (mentionMode === 'user_only') return false;
 
   if (!mentionedRoleIds || !mentionedRoleIds.length) return false;
   if (!botRoleIds || !botRoleIds.length) return false;

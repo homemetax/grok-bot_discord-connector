@@ -106,6 +106,37 @@ describe('evaluateInbound', () => {
     assert.equal(result.action, 'forward');
   });
 
+  it('forwards a role mention when mentionMode is user_or_role', () => {
+    const g = new LoopGuard({ cooldownMs: 0 });
+    const result = evaluateInbound(
+      event({ mentionedUserIds: [], mentionedRoleIds: [ROLE] }),
+      policy({ mentionMode: 'user_or_role' }),
+      g,
+    );
+    assert.equal(result.action, 'forward');
+  });
+
+  it('ignores a role-only mention when mentionMode is user_only', () => {
+    const g = new LoopGuard();
+    const result = evaluateInbound(
+      event({ mentionedUserIds: [], mentionedRoleIds: [ROLE] }),
+      policy({ mentionMode: 'user_only' }),
+      g,
+    );
+    assert.equal(result.action, 'ignore');
+    assert.equal(result.reason, 'not_mentioned');
+  });
+
+  it('forwards a direct user mention when mentionMode is user_only', () => {
+    const g = new LoopGuard({ cooldownMs: 0 });
+    const result = evaluateInbound(
+      event({ mentionedUserIds: [BOT], mentionedRoleIds: [] }),
+      policy({ mentionMode: 'user_only' }),
+      g,
+    );
+    assert.equal(result.action, 'forward');
+  });
+
   it('applies the loop guard to other bots', () => {
     const g = new LoopGuard({ maxBotExchanges: 1, cooldownMs: 0, windowMs: 60_000 });
     const botEvent = event({ authorId: OTHER_BOT, authorIsBot: true });

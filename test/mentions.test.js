@@ -126,4 +126,40 @@ describe('isBotMentioned', () => {
   it('returns false without a bot user id', () => {
     assert.equal(isBotMentioned({ mentionedUserIds: [BOT] }), false);
   });
+
+  it('user_or_role (default) still matches a bot role mention', () => {
+    assert.equal(
+      isBotMentioned({
+        botUserId: BOT,
+        botRoleIds: [ROLE_A],
+        mentionedUserIds: [],
+        mentionedRoleIds: [ROLE_A],
+        mentionMode: 'user_or_role',
+      }),
+      true,
+    );
+  });
+
+  it('user_only ignores role mentions and requires a direct @user mention', () => {
+    assert.equal(
+      isBotMentioned({
+        botUserId: BOT,
+        botRoleIds: [ROLE_A],
+        mentionedUserIds: [],
+        mentionedRoleIds: [ROLE_A],
+        mentionMode: 'user_only',
+      }),
+      false,
+    );
+    assert.equal(
+      isBotMentioned({
+        botUserId: BOT,
+        botRoleIds: [ROLE_A],
+        mentionedUserIds: [BOT],
+        mentionedRoleIds: [ROLE_A],
+        mentionMode: 'user_only',
+      }),
+      true,
+    );
+  });
 });

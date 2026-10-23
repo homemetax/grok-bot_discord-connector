@@ -48,6 +48,15 @@ const DEFAULT_ALLOWED_MENTIONS = Object.freeze({
   parse: Object.freeze(['users']),
 });
 
+/** Directory for persisted connector state (author daily counts). Override with DATA_DIR or config data_dir. */
+const DEFAULT_DATA_DIR = './data';
+const AUTHOR_DAILY_FILENAME = 'author-daily.json';
+const AUTHOR_DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_PER_AUTHOR_DAILY_LIMIT = 0;
+const DEFAULT_MENTION_MODE = 'user_or_role';
+const MENTION_MODES = Object.freeze(['user_or_role', 'user_only']);
+const MAX_PER_AUTHOR_DAILY_LIMIT = 10000;
+
 /** Cap inbound webhook Retry-After waits so a huge retry_after cannot stall the process. */
 const MAX_WEBHOOK_RETRY_AFTER_MS = 15000;
 
@@ -77,6 +86,13 @@ module.exports = {
   DEFAULT_WEBHOOK_TIMEOUT_MS,
   DEFAULT_LOOP_GUARD,
   DEFAULT_ALLOWED_MENTIONS,
+  DEFAULT_DATA_DIR,
+  AUTHOR_DAILY_FILENAME,
+  AUTHOR_DAILY_WINDOW_MS,
+  DEFAULT_PER_AUTHOR_DAILY_LIMIT,
+  DEFAULT_MENTION_MODE,
+  MENTION_MODES,
+  MAX_PER_AUTHOR_DAILY_LIMIT,
   MAX_WEBHOOK_RETRY_AFTER_MS,
   THREAD_CHANNEL_TYPES,
 };

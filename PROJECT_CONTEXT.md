@@ -5,7 +5,7 @@
 ## Model
 
 - One Discord **application + bot token** per agent (Miya, Scar, Jack, Devos, Pip, …).
-- `config/agents.json` lists agents: `name`, token env var, webhook URL env var, webhook key env var, optional `allowed_channel_ids`.
+- `config/agents.json` lists agents: `name`, token env var, webhook URL env var, webhook key env var, optional `allowed_channel_ids`, `mention_mode`, `per_author_daily_limit`, `rate_limit_exempt_author_ids`. Root `data_dir` (or `DATA_DIR`) holds persisted counts.
 - Secrets live only in `process.env` (typically a `.env` file loaded into the environment). They are never committed or logged.
 - Hosting is a Linux box under **pm2** or **systemd**. No paid SaaS is required.
 - **Multi-client in one process** is the default (`node src/index.js` logs in every configured agent). **One process per bot** is `DISCORD_AGENT=<name>`.
@@ -14,7 +14,7 @@
 
 ```
 Discord MESSAGE_CREATE
-  → mention + allowlist + loop-guard
+  → mention (mention_mode) + allowlist + loop-guard + per-author daily limit
   → JSON payload
   → POST agent Grok Bot routine webhook (sender key header)
   → agent later calls `node bin/discord.js …` with that agent's token
@@ -29,9 +29,10 @@ Inbound never executes Discord message text. Outbound never invents permission c
 | --- | --- |
 | `src/index.js` | Process entry: load env/config, start 1..N clients |
 | `src/config.js` | Validate config; `selectAgents` for multi vs single |
-| `src/mentions.js` | User/role mention detection; ignore @everyone/@here |
+| `src/mentions.js` | User/role mention detection (`mention_mode`); ignore @everyone/@here |
 | `src/allowlist.js` | Optional channel allowlist + thread parent + DM flag |
 | `src/loop-guard.js` | Bot-to-bot cap + cooldown per agent+channel/thread |
+| `src/author-daily.js` | Rolling 24h per-author forward cap; atomic JSON persist |
 | `src/inbound.js` | Pure gate used by the handler and tests |
 | `src/handler.js` | discord.js `messageCreate` → webhook POST |
 | `src/payload.js` | Webhook JSON builder (untrusted strings) |
@@ -42,7 +43,7 @@ Inbound never executes Discord message text. Outbound never invents permission c
 
 ## Invariants
 
-1. Act only when this bot's user id is in `message.mentions.users` or one of its (non-@everyone) roles is in `mention_roles`.
+1. Act only when this bot is mentioned: default `user_or_role` is a user mention of the bot or one of its (non-@everyone) roles; `user_only` requires a direct @user mention.
 2. Ignore DMs unless the agent has `enable_dms: true`.
 3. Never handle the bot's own messages.
 4. Humans always pass the loop guard (and reset the bot-to-bot chain). Other bots are capped per thread/channel with a cooldown.
@@ -53,6 +54,7 @@ Inbound never executes Discord message text. Outbound never invents permission c
 9. Threads are detected via `channel.isThread()` / thread types, never via “has parentId” (that would treat category children as threads).
 10. `allowed_channel_ids` missing or empty means any visible guild channel/thread; a non-empty list is an optional filter. DMs stay off unless `enable_dms`.
 11. Default webhook sender header is `Authorization` with `Bearer <key>` unless the key already starts with `Bearer `.
+12. `per_author_daily_limit` 0 (default) is off. A positive cap counts forwards per author per agent over a rolling 24h window. Exempt author ids skip the cap. Hitting the cap logs `rate_limited` at debug and does not POST or reply on Discord. Counts persist atomically under `DATA_DIR` / `data_dir` (default `./data`).
 
 ## Docs to keep in sync
 
