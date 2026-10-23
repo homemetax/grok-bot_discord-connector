@@ -1,0 +1,50 @@
+{
+  "webhook_key_header": "Authorization",
+  "history_limit": 20,
+  "enable_dms": false,
+  "webhook_timeout_ms": 30000,
+  "loop_guard": {
+    "max_bot_exchanges": 6,
+    "window_ms": 120000,
+    "cooldown_ms": 8000
+  },
+  "data_dir": "./data",
+  "agents": [
+    {
+      "name": "miya",
+      "token_env": "MIYA_DISCORD_TOKEN",
+      "webhook_url_env": "MIYA_WEBHOOK_URL",
+      "webhook_key_env": "MIYA_WEBHOOK_KEY",
+      "per_author_daily_limit": 1,
+      "rate_limit_exempt_author_ids": ["358829341020520470"],
+      "mention_mode": "user_only"
+    },
+    {
+      "name": "scar",
+      "token_env": "SCAR_DISCORD_TOKEN",
+      "webhook_url_env": "SCAR_WEBHOOK_URL",
+      "webhook_key_env": "SCAR_WEBHOOK_KEY"
+    },
+    {
+      "name": "jack",
+      "token_env": "JACK_DISCORD_TOKEN",
+      "webhook_url_env": "JACK_WEBHOOK_URL",
+      "webhook_key_env": "JACK_WEBHOOK_KEY"
+    },
+    {
+      "name": "devos",
+      "token_env": "DEVOS_DISCORD_TOKEN",
+      "webhook_url_env": "DEVOS_WEBHOOK_URL",
+      "webhook_key_env": "DEVOS_WEBHOOK_KEY"
+    },
+    {
+      "name": "pip",
+      "token_env": "PIP_DISCORD_TOKEN",
+      "webhook_url_env": "PIP_WEBHOOK_URL",
+      "webhook_key_env": "PIP_WEBHOOK_KEY",
+      "allowed_channel_ids": ["123456789012345678"],
+      "enable_dms": false,
+      "history_limit": 30
+    }
+  ]
+}
