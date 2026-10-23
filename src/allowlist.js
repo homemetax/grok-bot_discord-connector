@@ -15,13 +15,13 @@ function isThreadChannel(channel) {
 }
 
 /**
- * Channel allowlist.
+ * Optional channel allowlist.
  *
- * Guild messages are accepted when the channel id is listed, or when the
- * message is in a thread whose parent channel id is listed (including
- * forum posts). DMs are rejected unless enableDms is true. An empty
- * allowlist rejects every guild channel. Category ids are not implicit
- * allowlists for their children.
+ * Missing or empty allowedChannelIds: any guild channel or thread the
+ * bot can see (Discord role / overwrite permissions are the gate).
+ * Non-empty: accept only listed channel ids, or threads whose parent
+ * is listed (including forum posts). Category ids are not implicit
+ * allowlists for their children. DMs are rejected unless enableDms.
  */
 
 function isChannelAllowed(location = {}, policy = {}) {
@@ -34,9 +34,14 @@ function isChannelAllowed(location = {}, policy = {}) {
     ? null
     : String(location.parentId);
 
+  const rawIds = policy.allowedChannelIds;
   const allowed = new Set(
-    (policy.allowedChannelIds || []).filter((id) => id != null && id !== '').map(String),
+    (Array.isArray(rawIds) ? rawIds : []).filter((id) => id != null && id !== '').map(String),
   );
+
+  if (allowed.size === 0) {
+    return Boolean(channelId);
+  }
 
   if (channelId && allowed.has(channelId)) return true;
   if (parentId && allowed.has(parentId)) return true;

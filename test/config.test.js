@@ -53,6 +53,29 @@ describe('normalizeConfig', () => {
   it('rejects empty agents list', () => {
     assert.throws(() => normalizeConfig({ agents: [] }));
   });
+
+  it('accepts a missing or empty allowed_channel_ids list', () => {
+    const { allowed_channel_ids: omitted } = normalizeConfig({
+      agents: [{
+        name: 'miya',
+        token_env: 'MIYA_DISCORD_TOKEN',
+        webhook_url_env: 'MIYA_WEBHOOK_URL',
+        webhook_key_env: 'MIYA_WEBHOOK_KEY',
+      }],
+    }).agents[0];
+    assert.deepEqual(omitted, []);
+
+    const { allowed_channel_ids: empty } = normalizeConfig({
+      agents: [{
+        name: 'scar',
+        token_env: 'SCAR_DISCORD_TOKEN',
+        webhook_url_env: 'SCAR_WEBHOOK_URL',
+        webhook_key_env: 'SCAR_WEBHOOK_KEY',
+        allowed_channel_ids: [],
+      }],
+    }).agents[0];
+    assert.deepEqual(empty, []);
+  });
 });
 
 describe('selectAgents (multi-client vs one process per bot)', () => {

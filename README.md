@@ -43,7 +43,7 @@ Repeat for **each** agent (Miya, Scar, Jack, Devos, Pip, …).
    - Scopes: `bot`
    - Permissions integer: `326686067792` (see [Invite URL](#invite-url))
    - Open the generated URL while logged into a guild admin account and authorize.
-5. In Discord, enable Developer Mode (Settings → Advanced). Right-click the channels this agent may speak in → **Copy Channel ID**. Put those IDs in `allowed_channel_ids` for that agent.
+5. Channel access is controlled by Discord role permissions and overwrites. Optionally restrict further by copying channel IDs (Developer Mode → Copy Channel ID) into `allowed_channel_ids`. Omit the field or leave it `[]` to accept any guild channel or thread the bot can see.
 6. Give the bot role a position **above** any roles it must manage, and grant channel overwrites it actually needs. The connector does not cap permissions; Discord will 403 when hierarchy or overwrites deny the action.
 
 Intents used in code (`src/runtime.js`), matching [Gateway intents](https://discord.com/developers/docs/events/gateway):
@@ -121,16 +121,15 @@ Header **name** is config (`webhook_key_header`, default `X-Webhook-Key`), not a
       "name": "miya",
       "token_env": "MIYA_DISCORD_TOKEN",
       "webhook_url_env": "MIYA_WEBHOOK_URL",
-      "webhook_key_env": "MIYA_WEBHOOK_KEY",
-      "allowed_channel_ids": ["123456789012345678"]
+      "webhook_key_env": "MIYA_WEBHOOK_KEY"
     }
   ]
 }
 ```
 
-Per-agent overrides: `enable_dms`, `history_limit` (1–100), `webhook_key_header`, `webhook_timeout_ms`, `loop_guard`.
+Per-agent overrides: `enable_dms`, `history_limit` (1–100), `webhook_key_header`, `webhook_timeout_ms`, `loop_guard`, `allowed_channel_ids`.
 
-Empty `allowed_channel_ids` means **no guild channels** are accepted. Threads (and forum posts) are allowed when their **parent** channel id is listed.
+`allowed_channel_ids` is **optional**. Missing or `[]` means the bot responds in any guild channel or thread it can see; Discord role permissions and channel overwrites are the access control. A non-empty list is an extra filter: only those channels, plus threads (and forum posts) whose **parent** is listed. DMs stay off unless `enable_dms` is true.
 
 ## Inbound behavior
 
@@ -138,7 +137,7 @@ On `MESSAGE_CREATE` for that agent's client:
 
 1. Ignore the bot's **own** messages.
 2. Ignore DMs unless `enable_dms`.
-3. Ignore guild messages whose channel (or thread parent) is not allowlisted.
+3. If `allowed_channel_ids` is set and non-empty, ignore guild messages whose channel (or thread parent) is not listed. If it is missing or empty, accept any guild channel or thread the bot can see.
 4. Act only if `message.mentions.users` contains this bot's user id **or** `mention_roles` contains one of this bot's roles. **@everyone / @here are not triggers** (`mention_everyone` is ignored as a mention of the bot). The @everyone role id (guild id) is not treated as a bot role.
 5. Humans and other bots are both accepted. Bot-to-bot traffic is limited **per agent + channel/thread**: a sliding-window cap and a cooldown. A human message resets that chain.
 6. Fetch up to `history_limit` prior messages in that channel/thread (Discord max 100).
@@ -273,7 +272,7 @@ sudo systemctl enable --now grok-discord@miya grok-discord@scar
 - **Untrusted content:** Discord `content` is JSON data. It is never passed to a shell, `eval`, or dynamic `require`. Do not pipe it to a shell on the Grok Bot side either.
 - **Webhook POSTs do not follow redirects**, so a 30x cannot leak the sender-key header to another host. 401/403 are not retried. 429 waits are capped (15s) using `Retry-After` / `retry_after`.
 - **@everyone / roles:** inbound ignores mass pings as a bot trigger; outbound blocks those mention types by default.
-- **Allowlist:** category `parentId` is not treated as a thread parent. Only real threads/forum posts inherit the parent channel allowlist.
+- **Allowlist (optional):** missing or empty `allowed_channel_ids` accepts every guild channel/thread the bot can see. A non-empty list is a filter. Category `parentId` is not treated as a thread parent. Only real threads/forum posts inherit the parent channel allowlist. DMs stay off unless `enable_dms`.
 - **ManageRoles / ManageChannels:** included in the invite integer. A bot can only assign roles **below** its highest role, and cannot grant permissions it does not have. Moving the bot role to the top of the list, or leaving ManageRoles on a publicly invitable bot, is a guild-compromise risk. Prefer a dedicated bot role, deny those permissions in channel overwrites where unused, and keep tokens on the host only.
 - **DMs** are off unless you set `enable_dms`.
 - **Loop guard** stops two bots from bouncing mentions forever in the same thread/channel.
@@ -284,7 +283,7 @@ sudo systemctl enable --now grok-discord@miya grok-discord@scar
 npm test
 ```
 
-Required coverage: mention detection, allowlist (including thread parent and DMs), loop guard, message splitting. Also config selection for multi-client vs `DISCORD_AGENT`.
+Required coverage: mention detection, allowlist (optional/open vs filter, thread parent, DMs stay off), loop guard, message splitting. Also config selection for multi-client vs `DISCORD_AGENT`.
 
 ## Layout
 

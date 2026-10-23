@@ -63,9 +63,31 @@ describe('isChannelAllowed', () => {
     );
   });
 
-  it('rejects every guild channel when the allowlist is empty', () => {
+  it('allows every guild channel when the allowlist is empty or missing', () => {
     assert.equal(
       isChannelAllowed({ channelId: CHANNEL, isDm: false }, { allowedChannelIds: [], enableDms: false }),
+      true,
+    );
+    assert.equal(
+      isChannelAllowed({ channelId: OTHER, isDm: false }, { enableDms: false }),
+      true,
+    );
+    assert.equal(
+      isChannelAllowed(
+        { channelId: THREAD, parentId: OTHER, isDm: false },
+        { allowedChannelIds: [] },
+      ),
+      true,
+    );
+  });
+
+  it('still rejects DMs when the allowlist is open', () => {
+    assert.equal(
+      isChannelAllowed({ channelId: 'dm', isDm: true }, { allowedChannelIds: [], enableDms: false }),
+      false,
+    );
+    assert.equal(
+      isChannelAllowed({ channelId: 'dm', isDm: true }, { enableDms: false }),
       false,
     );
   });

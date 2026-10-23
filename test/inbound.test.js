@@ -76,6 +76,26 @@ describe('evaluateInbound', () => {
     assert.equal(result.reason, 'dm_disabled');
   });
 
+  it('forwards a mention in any guild channel when the allowlist is empty', () => {
+    const g = new LoopGuard({ cooldownMs: 0 });
+    const result = evaluateInbound(
+      event({ channelId: '100000000000000099' }),
+      policy({ allowedChannelIds: [] }),
+      g,
+    );
+    assert.equal(result.action, 'forward');
+  });
+
+  it('still ignores DMs when the allowlist is open', () => {
+    const g = new LoopGuard();
+    const result = evaluateInbound(
+      event({ isDm: true, channelId: 'dm1' }),
+      policy({ allowedChannelIds: [] }),
+      g,
+    );
+    assert.equal(result.reason, 'dm_disabled');
+  });
+
   it('forwards DMs when enableDms is true', () => {
     const g = new LoopGuard({ cooldownMs: 0 });
     const result = evaluateInbound(

@@ -13,29 +13,25 @@
       "name": "miya",
       "token_env": "MIYA_DISCORD_TOKEN",
       "webhook_url_env": "MIYA_WEBHOOK_URL",
-      "webhook_key_env": "MIYA_WEBHOOK_KEY",
-      "allowed_channel_ids": ["123456789012345678"]
+      "webhook_key_env": "MIYA_WEBHOOK_KEY"
     },
     {
       "name": "scar",
       "token_env": "SCAR_DISCORD_TOKEN",
       "webhook_url_env": "SCAR_WEBHOOK_URL",
-      "webhook_key_env": "SCAR_WEBHOOK_KEY",
-      "allowed_channel_ids": ["123456789012345678"]
+      "webhook_key_env": "SCAR_WEBHOOK_KEY"
     },
     {
       "name": "jack",
       "token_env": "JACK_DISCORD_TOKEN",
       "webhook_url_env": "JACK_WEBHOOK_URL",
-      "webhook_key_env": "JACK_WEBHOOK_KEY",
-      "allowed_channel_ids": ["123456789012345678"]
+      "webhook_key_env": "JACK_WEBHOOK_KEY"
     },
     {
       "name": "devos",
       "token_env": "DEVOS_DISCORD_TOKEN",
       "webhook_url_env": "DEVOS_WEBHOOK_URL",
-      "webhook_key_env": "DEVOS_WEBHOOK_KEY",
-      "allowed_channel_ids": ["123456789012345678"]
+      "webhook_key_env": "DEVOS_WEBHOOK_KEY"
     },
     {
       "name": "pip",
