@@ -15,6 +15,7 @@ Update docs in the same change that alters behavior. Do not leave README, exampl
 | Hosting (pm2 / systemd) | `README.md`, `docs/OPERATIONS.md`, `docs/QUICKSTART.md`, `deploy/*`, `scripts/start.sh` |
 | Security (secrets, 403 hierarchy, untrusted content) | `README.md`, `docs/SECURITY.md` |
 | Teammate packaging scripts | `docs/QUICKSTART.md`, `scripts/setup.sh`, `scripts/add-agent.sh`, `scripts/start.sh`, `package.json` |
+| Agent setup skill | `skills/discord-connector-setup/SKILL.md` |
 
 ## Do not treat as product docs
 
