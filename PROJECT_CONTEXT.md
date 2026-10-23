@@ -7,7 +7,7 @@
 - One Discord **application + bot token** per agent (Miya, Scar, Jack, Devos, Pip, …).
 - `config/agents.json` lists agents: `name`, token env var, webhook URL env var, webhook key env var, optional `allowed_channel_ids`, `mention_mode`, `per_author_daily_limit`, `rate_limit_exempt_author_ids`. Root `data_dir` (or `DATA_DIR`) holds persisted counts.
 - Secrets live only in `process.env` (typically a `.env` file loaded into the environment). They are never committed or logged.
-- Hosting is a Linux box under **pm2** or **systemd**. No paid SaaS is required.
+- Hosting is a Linux box under **pm2** or **systemd**. No paid SaaS is required. Teammate packaging: `scripts/setup.sh`, `scripts/add-agent.sh`, `scripts/start.sh` (one pm2 process per agent, no `pm2 save`). Scripts never write secret values.
 - **Multi-client in one process** is the default (`node src/index.js` logs in every configured agent). **One process per bot** is `DISCORD_AGENT=<name>`.
 
 ## Data flow
@@ -40,6 +40,8 @@ Inbound never executes Discord message text. Outbound never invents permission c
 | `src/split.js` | 2000-character message splitting |
 | `src/cli/` | Outbound REST CLI |
 | `bin/discord.js` | CLI entry |
+| `scripts/` | Teammate setup / add-agent / pm2 start (env names only) |
+| `docs/` | QUICKSTART, DISCORD_PORTAL, GROK_BOT_WEBHOOK, CONFIG, OPERATIONS, SECURITY |
 
 ## Invariants
 
@@ -58,4 +60,4 @@ Inbound never executes Discord message text. Outbound never invents permission c
 
 ## Docs to keep in sync
 
-See `documentation-maintenance.md`. Primary user-facing doc is `README.md`.
+See `documentation-maintenance.md`. Primary user-facing doc is `README.md`, with teammate guides under `docs/`.

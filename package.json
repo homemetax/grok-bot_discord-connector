@@ -8,6 +8,9 @@
   },
   "scripts": {
     "start": "node src/index.js",
+    "setup": "bash scripts/setup.sh",
+    "add-agent": "bash scripts/add-agent.sh",
+    "start:pm2": "bash scripts/start.sh",
     "test": "node --test test/*.test.js",
     "cli": "node bin/discord.js"
   },
