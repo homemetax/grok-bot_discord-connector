@@ -42,6 +42,7 @@ Inbound never executes Discord message text. Outbound never invents permission c
 | `bin/discord.js` | CLI entry |
 | `scripts/` | Teammate setup / add-agent / pm2 start (env names only) |
 | `docs/` | QUICKSTART, DISCORD_PORTAL, GROK_BOT_WEBHOOK, CONFIG, OPERATIONS, SECURITY |
+| `skills/discord-connector-setup/SKILL.md` | Agent skill for install / configure / run |
 
 ## Invariants
 
