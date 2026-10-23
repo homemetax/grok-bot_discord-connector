@@ -1,5 +1,5 @@
 {
-  "webhook_key_header": "X-Webhook-Key",
+  "webhook_key_header": "Authorization",
   "history_limit": 20,
   "enable_dms": false,
   "webhook_timeout_ms": 30000,

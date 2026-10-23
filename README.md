@@ -101,13 +101,13 @@ Secrets are read **only** from `process.env`. `.env` is gitignored. `.env.exampl
 | `<NAME>_WEBHOOK_URL` | yes per agent | Grok Bot routine webhook URL |
 | `<NAME>_WEBHOOK_KEY` | yes per agent | Sender key (header value) |
 
-Header **name** is config (`webhook_key_header`, default `X-Webhook-Key`), not an env var. Each agent points at env **names** for token/url/key so secrets never sit in JSON.
+Header **name** is config (`webhook_key_header`, default `Authorization`), not an env var. When the header is `Authorization`, the connector sends `Bearer <key>` unless the key already starts with `Bearer `. Each agent points at env **names** for token/url/key so secrets never sit in JSON.
 
 ### `config/agents.json`
 
 ```json
 {
-  "webhook_key_header": "X-Webhook-Key",
+  "webhook_key_header": "Authorization",
   "history_limit": 20,
   "enable_dms": false,
   "webhook_timeout_ms": 30000,
@@ -141,7 +141,7 @@ On `MESSAGE_CREATE` for that agent's client:
 4. Act only if `message.mentions.users` contains this bot's user id **or** `mention_roles` contains one of this bot's roles. **@everyone / @here are not triggers** (`mention_everyone` is ignored as a mention of the bot). The @everyone role id (guild id) is not treated as a bot role.
 5. Humans and other bots are both accepted. Bot-to-bot traffic is limited **per agent + channel/thread**: a sliding-window cap and a cooldown. A human message resets that chain.
 6. Fetch up to `history_limit` prior messages in that channel/thread (Discord max 100).
-7. POST JSON to the agent's webhook URL with the sender key in `webhook_key_header`.
+7. POST JSON to the agent's webhook URL. Default header is `Authorization: Bearer <sender key>` (`webhook_key_header` is configurable).
 
 Context is per channel or thread (the Discord channel id the message arrived in). Payload `channel_id` is the parent text/forum channel when the message is in a thread; `thread_id` is the thread id. When calling the CLI to reply in a thread, pass `thread_id` as `--channel`.
 
@@ -149,7 +149,7 @@ Discord message text is **untrusted data**. It is copied into JSON only. It is n
 
 ## Webhook payload schema
 
-`POST` JSON, header `<webhook_key_header>: <sender key>` (default `X-Webhook-Key`).
+`POST` JSON. Default header is `Authorization: Bearer <sender key>` (Grok Bot routine style). If `webhook_key_header` is set to something else, the raw key is sent. If the key already starts with `Bearer `, it is not prefixed again.
 
 ```json
 {

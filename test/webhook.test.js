@@ -2,7 +2,7 @@
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const { postWebhook } = require('../src/webhook');
+const { postWebhook, formatSenderKey } = require('../src/webhook');
 const { buildAllowedMentions } = require('../src/mentions-policy');
 const { wrapDiscordError } = require('../src/discord-error');
 
@@ -38,6 +38,38 @@ describe('postWebhook', () => {
     assert.equal(JSON.parse(calls[0].opts.body).agent, 'miya');
   });
 
+  it('sends Authorization: Bearer <key> by default style', async () => {
+    const calls = [];
+    await postWebhook({
+      url: 'https://example.test/hook',
+      key: 'super-secret-key',
+      headerName: 'Authorization',
+      payload: {},
+      fetchImpl: async (url, opts) => {
+        calls.push(opts);
+        return jsonResponse(200, { ok: true });
+      },
+      maxRetries: 0,
+    });
+    assert.equal(calls[0].headers.Authorization, 'Bearer super-secret-key');
+  });
+
+  it('does not double-prefix Bearer', async () => {
+    const calls = [];
+    await postWebhook({
+      url: 'https://example.test/hook',
+      key: 'Bearer already-set',
+      headerName: 'Authorization',
+      payload: {},
+      fetchImpl: async (url, opts) => {
+        calls.push(opts);
+        return jsonResponse(200, { ok: true });
+      },
+      maxRetries: 0,
+    });
+    assert.equal(calls[0].headers.Authorization, 'Bearer already-set');
+  });
+
   it('retries 429 using retry_after and does not retry 401', async () => {
     let n = 0;
     const fetchImpl = async () => {
@@ -69,6 +101,15 @@ describe('postWebhook', () => {
         }),
       (err) => err.status === 401,
     );
+  });
+});
+
+describe('formatSenderKey', () => {
+  it('prefixes Bearer for Authorization and leaves other headers raw', () => {
+    assert.equal(formatSenderKey('Authorization', 'abc'), 'Bearer abc');
+    assert.equal(formatSenderKey('authorization', 'abc'), 'Bearer abc');
+    assert.equal(formatSenderKey('Authorization', 'Bearer abc'), 'Bearer abc');
+    assert.equal(formatSenderKey('X-Webhook-Key', 'abc'), 'abc');
   });
 });
 

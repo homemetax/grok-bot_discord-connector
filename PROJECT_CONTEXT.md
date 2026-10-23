@@ -52,6 +52,7 @@ Inbound never executes Discord message text. Outbound never invents permission c
 8. Webhook fetch uses `redirect: 'error'` so the sender key cannot follow a 30x.
 9. Threads are detected via `channel.isThread()` / thread types, never via “has parentId” (that would treat category children as threads).
 10. `allowed_channel_ids` missing or empty means any visible guild channel/thread; a non-empty list is an optional filter. DMs stay off unless `enable_dms`.
+11. Default webhook sender header is `Authorization` with `Bearer <key>` unless the key already starts with `Bearer `.
 
 ## Docs to keep in sync
 
