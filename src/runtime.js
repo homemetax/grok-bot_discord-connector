@@ -28,8 +28,15 @@ function createClient() {
 }
 
 /**
- * @param {any} agent
- * @param {any} [opts]
+ * @typedef {object} CreateRuntimeOpts
+ * @property {NodeJS.ProcessEnv} [env]
+ * @property {typeof Client} [ClientImpl]
+ * @property {import('./author-daily').AuthorDailyLimiter} [authorLimiter]
+ */
+
+/**
+ * @param {import('./config').AgentConfig} agent
+ * @param {CreateRuntimeOpts} [opts]
  */
 function createRuntime(agent, { env = process.env, ClientImpl = Client, authorLimiter } = {}) {
   const log = createLogger(agent.name, env);

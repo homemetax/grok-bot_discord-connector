@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { z } = require('zod');
 const {
   DEFAULT_WEBHOOK_KEY_HEADER,
   DEFAULT_HISTORY_LIMIT,
@@ -10,21 +11,192 @@ const {
   DISCORD_HISTORY_MAX,
   DEFAULT_DATA_DIR,
   DEFAULT_PER_AUTHOR_DAILY_LIMIT,
+  DEFAULT_MENTION_MODE,
+  MENTION_MODES,
   MAX_PER_AUTHOR_DAILY_LIMIT,
+  AGENT_NAME_RE,
+  ENV_NAME_RE,
+  HEADER_NAME_RE,
+  SNOWFLAKE_RE,
 } = require('./constants');
-const {
-  assertAgentName,
-  assertAgentObject,
-  assertConfigRoot,
-  assertEnvName,
-  assertHeaderName,
-  assertNonEmptyAgents,
-  assertPositiveInt,
-  normalizeAllowedChannelIds,
-  normalizeDataDir,
-  normalizeMentionMode,
-  normalizeSnowflakeList,
-} = require('./validate');
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * @typedef {object} LoopGuardConfig
+ * @property {number} max_bot_exchanges
+ * @property {number} window_ms
+ * @property {number} cooldown_ms
+ *
+ * @typedef {object} AgentConfig
+ * @property {string} name
+ * @property {string} token_env
+ * @property {string} webhook_url_env
+ * @property {string} webhook_key_env
+ * @property {string[]} allowed_channel_ids
+ * @property {number} history_limit
+ * @property {boolean} enable_dms
+ * @property {string} webhook_key_header
+ * @property {number} webhook_timeout_ms
+ * @property {LoopGuardConfig} loop_guard
+ * @property {string} mention_mode
+ * @property {number} per_author_daily_limit
+ * @property {string[]} rate_limit_exempt_author_ids
+ *
+ * @typedef {object} ConnectorConfig
+ * @property {string} webhook_key_header
+ * @property {number} history_limit
+ * @property {boolean} enable_dms
+ * @property {number} webhook_timeout_ms
+ * @property {LoopGuardConfig} loop_guard
+ * @property {string} mention_mode
+ * @property {number} per_author_daily_limit
+ * @property {string[]} rate_limit_exempt_author_ids
+ * @property {string} data_dir
+ * @property {AgentConfig[]} agents
+ * @property {string} [config_path]
+ *
+ * @typedef {object} LoadConfigOpts
+ * @property {NodeJS.ProcessEnv} [env]
+ * @property {string} [cwd]
+ * @property {string} [filePath]
+ *
+ * @typedef {object} ResolveDataDirOpts
+ * @property {{ data_dir?: string }} [config]
+ * @property {NodeJS.ProcessEnv} [env]
+ * @property {string} [cwd]
+ */
+
+const snowflake = z.coerce.string().regex(SNOWFLAKE_RE, {
+  error: 'expected a Discord snowflake (17-20 digit id)',
+});
+const envName = z.string().regex(ENV_NAME_RE, { error: 'invalid environment variable name' });
+const headerName = z.string().regex(HEADER_NAME_RE, { error: 'Invalid webhook key header name' });
+const mentionMode = z.enum(MENTION_MODES);
+const snowflakeList = z.array(snowflake);
+
+const LoopGuardSchema = z.object({
+  max_bot_exchanges: z.number().int().min(1).max(1000).optional(),
+  window_ms: z.number().int().min(1).max(DAY_MS).optional(),
+  cooldown_ms: z.number().int().min(0).max(DAY_MS).optional(),
+});
+
+const AgentSchema = z.object({
+  name: z.string().regex(AGENT_NAME_RE, {
+    error: 'Invalid agent name: use 1-64 letters, digits, underscore, or hyphen',
+  }),
+  token_env: envName,
+  webhook_url_env: envName,
+  webhook_key_env: envName,
+  allowed_channel_ids: snowflakeList.nullish(),
+  history_limit: z.number().int().min(1).max(DISCORD_HISTORY_MAX).optional(),
+  enable_dms: z.boolean().optional(),
+  webhook_key_header: headerName.optional(),
+  webhook_timeout_ms: z.number().int().min(1000).max(120000).optional(),
+  loop_guard: LoopGuardSchema.optional(),
+  mention_mode: mentionMode.optional(),
+  per_author_daily_limit: z.number().int().min(0).max(MAX_PER_AUTHOR_DAILY_LIMIT).optional(),
+  rate_limit_exempt_author_ids: snowflakeList.optional(),
+});
+
+const ConfigSchema = z.object({
+  webhook_key_header: headerName.default(DEFAULT_WEBHOOK_KEY_HEADER),
+  history_limit: z.number().int().min(1).max(DISCORD_HISTORY_MAX).default(DEFAULT_HISTORY_LIMIT),
+  enable_dms: z.boolean().default(false),
+  webhook_timeout_ms: z.number().int().min(1000).max(120000).default(DEFAULT_WEBHOOK_TIMEOUT_MS),
+  loop_guard: LoopGuardSchema.default({}),
+  mention_mode: mentionMode.default(DEFAULT_MENTION_MODE),
+  per_author_daily_limit: z
+    .number()
+    .int()
+    .min(0)
+    .max(MAX_PER_AUTHOR_DAILY_LIMIT)
+    .default(DEFAULT_PER_AUTHOR_DAILY_LIMIT),
+  rate_limit_exempt_author_ids: snowflakeList.nullish().default([]),
+  data_dir: z
+    .string()
+    .refine((value) => !value.includes('\0'), { error: 'Invalid data_dir' })
+    .optional()
+    .default(DEFAULT_DATA_DIR),
+  agents: z.array(AgentSchema).min(1, { error: 'Config must list at least one agent' }),
+}).superRefine((cfg, ctx) => {
+  const seen = new Set();
+  for (let i = 0; i < cfg.agents.length; i += 1) {
+    const key = cfg.agents[i].name.toLowerCase();
+    if (seen.has(key)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['agents', i, 'name'],
+        message: `Duplicate agent name: ${cfg.agents[i].name}`,
+      });
+      return;
+    }
+    seen.add(key);
+  }
+});
+
+function formatPath(parts) {
+  return parts
+    .map((part, i) => {
+      if (typeof part === 'number') return `[${part}]`;
+      return i === 0 ? String(part) : `.${part}`;
+    })
+    .join('');
+}
+
+function formatConfigIssue(error) {
+  const issue = error.issues[0];
+  if (!issue) return 'Invalid config';
+  const pathLabel = formatPath(issue.path);
+  return pathLabel ? `${pathLabel}: ${issue.message}` : issue.message;
+}
+
+function completeLoopGuard(partial) {
+  return { ...DEFAULT_LOOP_GUARD, ...partial };
+}
+
+/**
+ * Fill omitted agent fields from config-level defaults (same inheritance as before).
+ * @param {any} parsed
+ * @returns {ConnectorConfig}
+ */
+function applyAgentDefaults(parsed) {
+  const loop_guard = completeLoopGuard(parsed.loop_guard);
+  const rate_limit_exempt_author_ids = (parsed.rate_limit_exempt_author_ids || []).slice();
+  return {
+    webhook_key_header: parsed.webhook_key_header,
+    history_limit: parsed.history_limit,
+    enable_dms: parsed.enable_dms,
+    webhook_timeout_ms: parsed.webhook_timeout_ms,
+    loop_guard,
+    mention_mode: parsed.mention_mode,
+    per_author_daily_limit: parsed.per_author_daily_limit,
+    rate_limit_exempt_author_ids,
+    data_dir: parsed.data_dir || DEFAULT_DATA_DIR,
+    agents: parsed.agents.map((agent) => ({
+      name: agent.name,
+      token_env: agent.token_env,
+      webhook_url_env: agent.webhook_url_env,
+      webhook_key_env: agent.webhook_key_env,
+      allowed_channel_ids: agent.allowed_channel_ids ? agent.allowed_channel_ids.slice() : [],
+      history_limit: agent.history_limit === undefined ? parsed.history_limit : agent.history_limit,
+      enable_dms: agent.enable_dms === undefined ? parsed.enable_dms : agent.enable_dms,
+      webhook_key_header: agent.webhook_key_header || parsed.webhook_key_header,
+      webhook_timeout_ms:
+        agent.webhook_timeout_ms === undefined ? parsed.webhook_timeout_ms : agent.webhook_timeout_ms,
+      loop_guard: completeLoopGuard({ ...loop_guard, ...agent.loop_guard }),
+      mention_mode: agent.mention_mode === undefined ? parsed.mention_mode : agent.mention_mode,
+      per_author_daily_limit:
+        agent.per_author_daily_limit === undefined
+          ? parsed.per_author_daily_limit
+          : agent.per_author_daily_limit,
+      rate_limit_exempt_author_ids:
+        agent.rate_limit_exempt_author_ids === undefined
+          ? rate_limit_exempt_author_ids.slice()
+          : agent.rate_limit_exempt_author_ids.slice(),
+    })),
+  };
+}
 
 function readJsonFile(filePath) {
   let raw;
@@ -48,150 +220,25 @@ function resolveConfigPath(env = process.env, cwd = process.cwd()) {
   return path.resolve(cwd, 'config', 'agents.json');
 }
 
-function normalizeLoopGuard(raw = {}) {
-  const merged = { ...DEFAULT_LOOP_GUARD, ...raw };
-  return {
-    max_bot_exchanges: assertPositiveInt(merged.max_bot_exchanges, 'loop_guard.max_bot_exchanges', {
-      min: 1,
-      max: 1000,
-    }),
-    window_ms: assertPositiveInt(merged.window_ms, 'loop_guard.window_ms', {
-      min: 1,
-      max: 24 * 60 * 60 * 1000,
-    }),
-    cooldown_ms: assertPositiveInt(merged.cooldown_ms, 'loop_guard.cooldown_ms', {
-      min: 0,
-      max: 24 * 60 * 60 * 1000,
-    }),
-  };
-}
-
-function normalizeAgent(raw, defaults, index) {
-  assertAgentObject(raw, index);
-  const name = assertAgentName(raw.name);
-  const token_env = assertEnvName(raw.token_env, `${name}.token_env`);
-  const webhook_url_env = assertEnvName(raw.webhook_url_env, `${name}.webhook_url_env`);
-  const webhook_key_env = assertEnvName(raw.webhook_key_env, `${name}.webhook_key_env`);
-  const allowed_channel_ids = normalizeAllowedChannelIds(raw.allowed_channel_ids, name);
-
-  const history_limit = raw.history_limit === undefined
-    ? defaults.history_limit
-    : assertPositiveInt(raw.history_limit, `${name}.history_limit`, { min: 1, max: DISCORD_HISTORY_MAX });
-
-  const enable_dms = raw.enable_dms === undefined ? defaults.enable_dms : Boolean(raw.enable_dms);
-
-  const webhook_key_header = raw.webhook_key_header
-    ? assertHeaderName(raw.webhook_key_header)
-    : defaults.webhook_key_header;
-
-  const webhook_timeout_ms = raw.webhook_timeout_ms === undefined
-    ? defaults.webhook_timeout_ms
-    : assertPositiveInt(raw.webhook_timeout_ms, `${name}.webhook_timeout_ms`, { min: 1000, max: 120000 });
-
-  const loop_guard = raw.loop_guard
-    ? normalizeLoopGuard({ ...defaults.loop_guard, ...raw.loop_guard })
-    : defaults.loop_guard;
-
-  const mention_mode = raw.mention_mode === undefined
-    ? defaults.mention_mode
-    : normalizeMentionMode(raw.mention_mode, `${name}.mention_mode`);
-
-  const per_author_daily_limit = raw.per_author_daily_limit === undefined
-    ? defaults.per_author_daily_limit
-    : assertPositiveInt(raw.per_author_daily_limit, `${name}.per_author_daily_limit`, {
-      min: 0,
-      max: MAX_PER_AUTHOR_DAILY_LIMIT,
-    });
-
-  const rate_limit_exempt_author_ids = raw.rate_limit_exempt_author_ids === undefined
-    ? defaults.rate_limit_exempt_author_ids.slice()
-    : normalizeSnowflakeList(raw.rate_limit_exempt_author_ids, `${name}.rate_limit_exempt_author_ids`);
-
-  return {
-    name,
-    token_env,
-    webhook_url_env,
-    webhook_key_env,
-    allowed_channel_ids,
-    history_limit,
-    enable_dms,
-    webhook_key_header,
-    webhook_timeout_ms,
-    loop_guard,
-    mention_mode,
-    per_author_daily_limit,
-    rate_limit_exempt_author_ids,
-  };
-}
-
+/**
+ * @param {unknown} raw
+ * @returns {ConnectorConfig}
+ */
 function normalizeConfig(raw) {
-  assertConfigRoot(raw);
-  const webhook_key_header = assertHeaderName(raw.webhook_key_header || DEFAULT_WEBHOOK_KEY_HEADER);
-  const history_limit = raw.history_limit === undefined
-    ? DEFAULT_HISTORY_LIMIT
-    : assertPositiveInt(raw.history_limit, 'history_limit', { min: 1, max: DISCORD_HISTORY_MAX });
-  const enable_dms = Boolean(raw.enable_dms);
-  const webhook_timeout_ms = raw.webhook_timeout_ms === undefined
-    ? DEFAULT_WEBHOOK_TIMEOUT_MS
-    : assertPositiveInt(raw.webhook_timeout_ms, 'webhook_timeout_ms', { min: 1000, max: 120000 });
-  const loop_guard = normalizeLoopGuard(raw.loop_guard || {});
-  const mention_mode = normalizeMentionMode(raw.mention_mode, 'mention_mode');
-  const per_author_daily_limit = raw.per_author_daily_limit === undefined
-    ? DEFAULT_PER_AUTHOR_DAILY_LIMIT
-    : assertPositiveInt(raw.per_author_daily_limit, 'per_author_daily_limit', {
-      min: 0,
-      max: MAX_PER_AUTHOR_DAILY_LIMIT,
-    });
-  const rate_limit_exempt_author_ids = normalizeSnowflakeList(
-    raw.rate_limit_exempt_author_ids,
-    'rate_limit_exempt_author_ids',
-  );
-  const data_dir = normalizeDataDir(raw.data_dir);
-
-  assertNonEmptyAgents(raw.agents);
-
-  const defaults = {
-    webhook_key_header,
-    history_limit,
-    enable_dms,
-    webhook_timeout_ms,
-    loop_guard,
-    mention_mode,
-    per_author_daily_limit,
-    rate_limit_exempt_author_ids,
-  };
-
-  const agents = [];
-  const seen = new Set();
-  for (let i = 0; i < raw.agents.length; i += 1) {
-    const agent = normalizeAgent(raw.agents[i], defaults, i);
-    const key = agent.name.toLowerCase();
-    if (seen.has(key)) {
-      throw new Error(`Duplicate agent name: ${agent.name}`);
-    }
-    seen.add(key);
-    agents.push(agent);
+  const result = ConfigSchema.safeParse(raw);
+  if (!result.success) {
+    throw new Error(formatConfigIssue(result.error));
   }
-
-  return {
-    webhook_key_header,
-    history_limit,
-    enable_dms,
-    webhook_timeout_ms,
-    loop_guard,
-    mention_mode,
-    per_author_daily_limit,
-    rate_limit_exempt_author_ids,
-    data_dir,
-    agents,
-  };
+  return applyAgentDefaults(result.data);
 }
 
-/** @param {any} [opts] */
+/**
+ * @param {LoadConfigOpts} [opts]
+ * @returns {ConnectorConfig}
+ */
 function loadConfig({ env = process.env, cwd = process.cwd(), filePath } = {}) {
   const resolved = filePath ? path.resolve(cwd, filePath) : resolveConfigPath(env, cwd);
-  const raw = readJsonFile(resolved);
-  const config = normalizeConfig(raw);
+  const config = normalizeConfig(readJsonFile(resolved));
   config.config_path = resolved;
   return config;
 }
@@ -199,6 +246,9 @@ function loadConfig({ env = process.env, cwd = process.cwd(), filePath } = {}) {
 /**
  * Multi-client vs one-process-per-bot.
  * DISCORD_AGENT unset => all agents. Set => exactly that agent.
+ * @param {ConnectorConfig} config
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {AgentConfig[]}
  */
 function selectAgents(config, env = process.env) {
   const requested = env.DISCORD_AGENT;
@@ -216,8 +266,8 @@ function selectAgents(config, env = process.env) {
 
 /**
  * DATA_DIR env wins, then config data_dir, then ./data. Resolved against cwd.
+ * @param {ResolveDataDirOpts} [opts]
  */
-/** @param {any} [opts] */
 function resolveDataDir({ config, env = process.env, cwd = process.cwd() } = {}) {
   const fromEnv = env && env.DATA_DIR;
   if (fromEnv !== undefined && String(fromEnv).trim() !== '') {
@@ -227,6 +277,11 @@ function resolveDataDir({ config, env = process.env, cwd = process.cwd() } = {})
   return path.resolve(cwd, fromConfig || DEFAULT_DATA_DIR);
 }
 
+/**
+ * @param {ConnectorConfig} config
+ * @param {string} [name]
+ * @returns {AgentConfig}
+ */
 function findAgent(config, name) {
   if (!name) {
     throw new Error('Agent name is required (--agent or DISCORD_AGENT)');
@@ -248,4 +303,6 @@ module.exports = {
   findAgent,
   resolveConfigPath,
   resolveDataDir,
+  ConfigSchema,
+  AgentSchema,
 };
