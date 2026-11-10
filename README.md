@@ -27,7 +27,7 @@ npm start                     # all agents in one Node process
 
 ## Requirements
 
-- Node.js 18.18+ (20 or 22 recommended)
+- Node.js 20+
 - One Discord application per agent
 - Grok Bot routine webhook URL + sender key per agent
 

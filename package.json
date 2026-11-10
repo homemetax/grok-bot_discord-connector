@@ -15,7 +15,7 @@
     "cli": "node bin/discord.js"
   },
   "engines": {
-    "node": ">=18.18.0"
+    "node": ">=20"
   },
   "dependencies": {
     "discord.js": "^14.16.3"
