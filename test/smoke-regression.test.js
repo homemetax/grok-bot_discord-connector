@@ -202,7 +202,6 @@ describe('webhook header style regressions', () => {
   it('custom header (raw key) is 401 against a Bearer-only routine; Bearer is 2xx', async () => {
     const srv = await startRoutineServer({ expectedKey: KEY });
     try {
-      let n = 0;
       await assert.rejects(
         () =>
           postWebhook({
@@ -213,12 +212,8 @@ describe('webhook header style regressions', () => {
             maxRetries: 3,
             timeoutMs: 2000,
           }),
-        (err) => {
-          n += 1;
-          return /** @type {any} */ (err).status === 401;
-        },
+        (err) => /** @type {any} */ (err).status === 401,
       );
-      assert.equal(n, 1, '401 must not retry');
       assert.equal(srv.requests.length, 1);
       assert.equal(srv.requests[0].webhookKey, KEY);
       assert.equal(srv.requests[0].authorization, null);
