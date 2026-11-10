@@ -27,6 +27,10 @@ function createClient() {
   });
 }
 
+/**
+ * @param {any} agent
+ * @param {any} [opts]
+ */
 function createRuntime(agent, { env = process.env, ClientImpl = Client, authorLimiter } = {}) {
   const log = createLogger(agent.name, env);
   const loopGuard = new LoopGuard({

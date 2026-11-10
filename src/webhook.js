@@ -53,6 +53,8 @@ function formatSenderKey(headerName, key) {
  * Does not follow redirects (would leak the sender key to a third party).
  * The sender key is sent in the configured header and is never logged.
  * Default header is Authorization, with a Bearer prefix unless the key already has one.
+ *
+ * @param {any} [opts]
  */
 async function postWebhook({
   url,
@@ -71,6 +73,7 @@ async function postWebhook({
   const safeKey = formatSenderKey(safeHeader, assertHeaderValue(key, 'Webhook sender key'));
 
   const body = JSON.stringify(payload);
+  /** @type {any} */
   let lastError;
 
   for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
@@ -91,7 +94,7 @@ async function postWebhook({
 
       if (response.status === 401 || response.status === 403) {
         const errBody = await readBody(response);
-        const err = new Error(`Webhook rejected the request (${response.status})`);
+        const err = /** @type {any} */ (new Error(`Webhook rejected the request (${response.status})`));
         err.status = response.status;
         err.body = errBody;
         throw err;
@@ -117,7 +120,7 @@ async function postWebhook({
 
       if (!response.ok) {
         const errBody = await readBody(response);
-        const err = new Error(`Webhook HTTP ${response.status}`);
+        const err = /** @type {any} */ (new Error(`Webhook HTTP ${response.status}`));
         err.status = response.status;
         err.body = errBody;
         throw err;
@@ -125,17 +128,18 @@ async function postWebhook({
 
       return { status: response.status, body: await readBody(response) };
     } catch (err) {
-      if (err && (err.status === 401 || err.status === 403)) throw err;
-      if (err && err.name === 'AbortError') {
+      const error = /** @type {any} */ (err);
+      if (error && (error.status === 401 || error.status === 403)) throw error;
+      if (error && error.name === 'AbortError') {
         lastError = new Error(`Webhook request timed out after ${timeoutMs}ms`);
         lastError.status = 408;
       } else {
-        lastError = err;
+        lastError = error;
       }
-      if (err && err.status && err.status < 500 && err.status !== 429) throw lastError;
+      if (error && error.status && error.status < 500 && error.status !== 429) throw lastError;
       if (attempt >= maxRetries) throw lastError;
-      if (err && err.status === 429) {
-        await sleep(capWaitMs(err.retryAfterMs || 1000));
+      if (error && error.status === 429) {
+        await sleep(capWaitMs(error.retryAfterMs || 1000));
         continue;
       }
       await sleep(capWaitMs(250 * 2 ** attempt));

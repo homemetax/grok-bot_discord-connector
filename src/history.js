@@ -2,6 +2,10 @@
 
 const { DISCORD_HISTORY_MAX } = require('./constants');
 
+/**
+ * @param {any} channel
+ * @param {any} [opts]
+ */
 async function fetchChannelHistory(channel, { before, limit } = {}) {
   const n = Math.min(Math.max(1, limit || 20), DISCORD_HISTORY_MAX);
   const options = { limit: n };

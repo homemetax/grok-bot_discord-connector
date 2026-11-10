@@ -12,6 +12,8 @@
     "add-agent": "bash scripts/add-agent.sh",
     "start:pm2": "bash scripts/start.sh",
     "test": "node --test test/*.test.js",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "cli": "node bin/discord.js"
   },
   "engines": {
@@ -21,5 +23,11 @@
     "discord.js": "^14.16.3"
   },
   "license": "UNLICENSED",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "globals": "^17.14.0",
+    "typescript": "^5.9.3"
+  }
 }

@@ -61,7 +61,7 @@ function encodeEmoji(emoji) {
     throw new Error('Emoji is required');
   }
   const value = emoji.trim();
-  if (value.length > 64 || /[\r\n\/?#]/.test(value)) {
+  if (value.length > 64 || /[\r\n/?#]/.test(value)) {
     throw new Error('Invalid emoji');
   }
   const wrapped = value.match(/^<a?:([^:>]+):(\d{17,20})>$/);

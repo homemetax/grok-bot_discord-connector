@@ -67,6 +67,10 @@ function toEvent(client, message, desc) {
   };
 }
 
+/**
+ * @param {any} runtime
+ * @param {any} message
+ */
 async function handleMessageCreate(runtime, message) {
   const { client, agent, loopGuard, log, env } = runtime;
 

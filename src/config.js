@@ -202,6 +202,7 @@ function normalizeConfig(raw) {
   };
 }
 
+/** @param {any} [opts] */
 function loadConfig({ env = process.env, cwd = process.cwd(), filePath } = {}) {
   const resolved = filePath ? path.resolve(cwd, filePath) : resolveConfigPath(env, cwd);
   const raw = readJsonFile(resolved);
@@ -262,6 +263,7 @@ function normalizeDataDir(raw) {
 /**
  * DATA_DIR env wins, then config data_dir, then ./data. Resolved against cwd.
  */
+/** @param {any} [opts] */
 function resolveDataDir({ config, env = process.env, cwd = process.cwd() } = {}) {
   const fromEnv = env && env.DATA_DIR;
   if (fromEnv !== undefined && String(fromEnv).trim() !== '') {

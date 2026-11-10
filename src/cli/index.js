@@ -139,7 +139,10 @@ async function main(argv = process.argv.slice(2)) {
     const code = await runCli(argv);
     return code;
   } catch (err) {
-    const wrapped = isDiscordHttpError(err) ? (err instanceof Error && err.status ? err : wrapDiscordError(err)) : err;
+    const error = /** @type {any} */ (err);
+    const wrapped = isDiscordHttpError(error)
+      ? (error instanceof Error && /** @type {any} */ (error).status ? error : wrapDiscordError(error))
+      : error;
     process.stderr.write(`${wrapped && wrapped.message ? wrapped.message : String(wrapped)}\n`);
     return exitCodeForError(wrapped);
   }

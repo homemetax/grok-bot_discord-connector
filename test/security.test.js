@@ -185,6 +185,8 @@ describe('error paths', () => {
       { agentName: 'GrokBot', allowedChannelIds: [CHANNEL], enableDms: false, botRoleIds: [] },
       new LoopGuard(),
     );
+    assert.equal(result.action, 'ignore');
+    if (result.action !== 'ignore') return;
     assert.equal(result.reason, 'invalid');
   });
 });

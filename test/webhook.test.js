@@ -99,7 +99,7 @@ describe('postWebhook', () => {
           fetchImpl: async () => jsonResponse(401, { error: 'nope' }),
           maxRetries: 3,
         }),
-      (err) => err.status === 401,
+      (err) => /** @type {any} */ (err).status === 401,
     );
   });
 });

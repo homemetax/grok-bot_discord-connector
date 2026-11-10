@@ -40,6 +40,10 @@ class LoopGuard {
     }
   }
 
+  /**
+   * @param {string} key
+   * @param {any} [opts]
+   */
   allow(key, { isBot } = {}) {
     if (!isBot) {
       this.exchanges.delete(key);

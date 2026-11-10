@@ -28,6 +28,7 @@ function collectBotRoleIds(roleIds, guildId) {
   return out;
 }
 
+/** @param {any} [opts] */
 function isBotMentioned({
   botUserId,
   botRoleIds = [],

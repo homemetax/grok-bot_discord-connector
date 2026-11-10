@@ -36,6 +36,7 @@ function mockMessage({ authorId = HUMAN } = {}) {
   };
 }
 
+/** @param {any} [opts] */
 function mockRuntime({ authorLimiter, agent = {}, env = {} } = {}) {
   const debug = [];
   const limiter = authorLimiter || new AuthorDailyLimiter({ filePath: null, now: () => 1e12 });
@@ -88,10 +89,10 @@ describe('handleMessageCreate daily limit', () => {
     const runtime = mockRuntime({ authorLimiter: limiter });
     let fetches = 0;
     const orig = globalThis.fetch;
-    globalThis.fetch = async () => {
+    globalThis.fetch = /** @type {any} */ (async () => {
       fetches += 1;
       return okFetch();
-    };
+    });
     try {
       await handleMessageCreate(runtime, mockMessage());
     } finally {
@@ -106,10 +107,10 @@ describe('handleMessageCreate daily limit', () => {
     const runtime = mockRuntime({ authorLimiter: limiter });
     let fetches = 0;
     const orig = globalThis.fetch;
-    globalThis.fetch = async () => {
+    globalThis.fetch = /** @type {any} */ (async () => {
       fetches += 1;
       return okFetch();
-    };
+    });
     try {
       await handleMessageCreate(runtime, mockMessage());
       await handleMessageCreate(runtime, mockMessage());
@@ -125,10 +126,10 @@ describe('handleMessageCreate daily limit', () => {
     const runtime = mockRuntime({ authorLimiter: limiter });
     let fetches = 0;
     const orig = globalThis.fetch;
-    globalThis.fetch = async () => {
+    globalThis.fetch = /** @type {any} */ (async () => {
       fetches += 1;
       return okFetch();
-    };
+    });
     try {
       await handleMessageCreate(runtime, mockMessage({ authorId: EXEMPT }));
       await handleMessageCreate(runtime, mockMessage({ authorId: EXEMPT }));
