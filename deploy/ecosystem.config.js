@@ -7,7 +7,7 @@
  * One process per bot: duplicate the app block and set DISCORD_AGENT.
  *
  *   pm2 start deploy/ecosystem.config.js
- *   pm2 start deploy/ecosystem.config.js --only grok-discord-GrokBot
+ *   pm2 start deploy/ecosystem.config.js --only discord-GrokBot
  */
 
 const path = require('node:path');
@@ -38,12 +38,12 @@ module.exports = {
     // One-process-per-bot examples. Enable by copying and filling DISCORD_AGENT.
     // {
     //   ...base,
-    //   name: 'grok-discord-GrokBot',
+    //   name: 'discord-GrokBot',
     //   env: { ...base.env, DISCORD_AGENT: 'GrokBot' },
     // },
     // {
     //   ...base,
-    //   name: 'grok-discord-agent-1',
+    //   name: 'discord-agent-1',
     //   env: { ...base.env, DISCORD_AGENT: 'agent-1' },
     // },
   ],
