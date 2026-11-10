@@ -18,6 +18,11 @@ function requireContentOrFiles(content, files, { allowEmpty = false } = {}) {
   throw new Error('Provide --content and/or --file');
 }
 
+/**
+ * @param {any} session
+ * @param {string} channelId
+ * @param {any} opts
+ */
 async function sendChunks(session, channelId, { content, files, flags, reference }) {
   const allowed_mentions = buildAllowedMentions(flags);
   const chunks = splitMessage(content || '');

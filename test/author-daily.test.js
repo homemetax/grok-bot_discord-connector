@@ -109,7 +109,7 @@ describe('AuthorDailyLimiter', () => {
       },
     };
     const state = normalizeState(polluted);
-    assert.equal(Object.prototype.polluted, undefined);
+    assert.equal(Object.hasOwn(Object.prototype, 'polluted'), false);
     assert.deepEqual(state.agents.GrokBot[AUTHOR], [5]);
     assert.equal(Object.hasOwn(state.agents, '__proto__'), false);
     assert.equal(Object.hasOwn(state.agents, 'constructor'), false);

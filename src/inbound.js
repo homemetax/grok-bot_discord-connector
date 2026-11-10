@@ -8,7 +8,10 @@ const { contextKey } = require('./loop-guard');
  * Pure inbound gate. Discord content is treated as untrusted data: this
  * function never executes message text.
  *
- * @returns {{ action: 'ignore', reason: string } | { action: 'forward', contextKey: string }}
+ * @param {any} event
+ * @param {any} policy
+ * @param {any} loopGuard
+ * @returns {{ action: string, reason?: string, contextKey?: string }}
  */
 function evaluateInbound(event, policy, loopGuard) {
   if (!event || !policy) {

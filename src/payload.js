@@ -33,6 +33,7 @@ function mapHistoryItem(item = {}) {
   };
 }
 
+/** @param {any} [opts] */
 function buildPayload({
   agent,
   guild_id = null,

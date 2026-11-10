@@ -30,6 +30,7 @@ function normalizeTimes(times) {
   return out;
 }
 
+/** @param {any} raw */
 function normalizeState(raw) {
   const state = emptyState();
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return state;
@@ -97,7 +98,7 @@ function readState(filePath) {
   try {
     raw = fs.readFileSync(filePath, 'utf8');
   } catch (err) {
-    if (err && err.code === 'ENOENT') return emptyState();
+    if (err && /** @type {any} */ (err).code === 'ENOENT') return emptyState();
     throw err;
   }
   try {
@@ -121,6 +122,7 @@ function exemptSet(exemptIds) {
  * Persist to a small JSON file so counts survive process restarts.
  */
 class AuthorDailyLimiter {
+  /** @param {any} [opts] */
   constructor({
     filePath = null,
     now = () => Date.now(),
@@ -171,6 +173,7 @@ class AuthorDailyLimiter {
    * Record one forward if the author is under the per-agent daily cap.
    * limit <= 0 disables the check. Exempt author ids skip the cap and are not counted.
    *
+   * @param {any} [opts]
    * @returns {{ allowed: boolean, reason: string, count: number }}
    */
   tryConsume({ agentName, authorId, limit = 0, exemptIds = [] } = {}) {
