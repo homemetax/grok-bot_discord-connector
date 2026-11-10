@@ -121,6 +121,12 @@ describe('packaging scripts', () => {
     fs.copyFileSync(path.join(REPO, 'package.json'), path.join(root, 'package.json'));
     fs.cpSync(path.join(REPO, 'scripts'), path.join(root, 'scripts'), { recursive: true });
     fs.cpSync(path.join(REPO, 'src'), path.join(root, 'src'), { recursive: true });
+    fs.mkdirSync(path.join(root, 'node_modules'));
+    fs.cpSync(
+      path.join(REPO, 'node_modules', 'zod'),
+      path.join(root, 'node_modules', 'zod'),
+      { recursive: true },
+    );
 
     const result = sh('setup.sh', ['--skip-npm', '--yes', '--name', 'nova', '--prefix', 'NOVA'], { cwd: root });
     assert.equal(result.status, 0, result.stderr || result.stdout);

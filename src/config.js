@@ -10,16 +10,20 @@ const {
   DISCORD_HISTORY_MAX,
   DEFAULT_DATA_DIR,
   DEFAULT_PER_AUTHOR_DAILY_LIMIT,
-  DEFAULT_MENTION_MODE,
-  MENTION_MODES,
   MAX_PER_AUTHOR_DAILY_LIMIT,
 } = require('./constants');
 const {
   assertAgentName,
+  assertAgentObject,
+  assertConfigRoot,
   assertEnvName,
   assertHeaderName,
+  assertNonEmptyAgents,
   assertPositiveInt,
-  isSnowflake,
+  normalizeAllowedChannelIds,
+  normalizeDataDir,
+  normalizeMentionMode,
+  normalizeSnowflakeList,
 } = require('./validate');
 
 function readJsonFile(filePath) {
@@ -63,27 +67,12 @@ function normalizeLoopGuard(raw = {}) {
 }
 
 function normalizeAgent(raw, defaults, index) {
-  if (!raw || typeof raw !== 'object') {
-    throw new Error(`agents[${index}] must be an object`);
-  }
+  assertAgentObject(raw, index);
   const name = assertAgentName(raw.name);
   const token_env = assertEnvName(raw.token_env, `${name}.token_env`);
   const webhook_url_env = assertEnvName(raw.webhook_url_env, `${name}.webhook_url_env`);
   const webhook_key_env = assertEnvName(raw.webhook_key_env, `${name}.webhook_key_env`);
-
-  const allowed = raw.allowed_channel_ids;
-  let allowed_channel_ids = [];
-  if (allowed !== undefined && allowed !== null) {
-    if (!Array.isArray(allowed)) {
-      throw new Error(`${name}.allowed_channel_ids must be an array of channel snowflakes when set`);
-    }
-    for (const id of allowed) {
-      if (!isSnowflake(id)) {
-        throw new Error(`${name}.allowed_channel_ids contains an invalid snowflake: ${JSON.stringify(id)}`);
-      }
-      allowed_channel_ids.push(String(id));
-    }
-  }
+  const allowed_channel_ids = normalizeAllowedChannelIds(raw.allowed_channel_ids, name);
 
   const history_limit = raw.history_limit === undefined
     ? defaults.history_limit
@@ -136,9 +125,7 @@ function normalizeAgent(raw, defaults, index) {
 }
 
 function normalizeConfig(raw) {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-    throw new Error('Config root must be an object');
-  }
+  assertConfigRoot(raw);
   const webhook_key_header = assertHeaderName(raw.webhook_key_header || DEFAULT_WEBHOOK_KEY_HEADER);
   const history_limit = raw.history_limit === undefined
     ? DEFAULT_HISTORY_LIMIT
@@ -161,9 +148,7 @@ function normalizeConfig(raw) {
   );
   const data_dir = normalizeDataDir(raw.data_dir);
 
-  if (!Array.isArray(raw.agents) || raw.agents.length === 0) {
-    throw new Error('Config must list at least one agent');
-  }
+  assertNonEmptyAgents(raw.agents);
 
   const defaults = {
     webhook_key_header,
@@ -227,37 +212,6 @@ function selectAgents(config, env = process.env) {
     throw new Error(`Unknown agent "${name}". Known agents: ${known}`);
   }
   return [agent];
-}
-
-function normalizeMentionMode(raw, label) {
-  if (raw === undefined || raw === null || raw === '') return DEFAULT_MENTION_MODE;
-  if (typeof raw !== 'string' || !MENTION_MODES.includes(raw)) {
-    throw new Error(`Invalid ${label}: expected ${MENTION_MODES.join(' or ')}`);
-  }
-  return raw;
-}
-
-function normalizeSnowflakeList(raw, label) {
-  if (raw === undefined || raw === null) return [];
-  if (!Array.isArray(raw)) {
-    throw new Error(`${label} must be an array of snowflakes`);
-  }
-  const out = [];
-  for (const id of raw) {
-    if (!isSnowflake(id)) {
-      throw new Error(`${label} contains an invalid snowflake: ${JSON.stringify(id)}`);
-    }
-    out.push(String(id));
-  }
-  return out;
-}
-
-function normalizeDataDir(raw) {
-  if (raw === undefined || raw === null || raw === '') return DEFAULT_DATA_DIR;
-  if (typeof raw !== 'string' || raw.includes('\0')) {
-    throw new Error('Invalid data_dir');
-  }
-  return raw;
 }
 
 /**

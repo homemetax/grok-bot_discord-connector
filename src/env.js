@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('node:fs');
+const { assertRequiredEnvName, assertRequiredEnvValue, isEnvName } = require('./validate');
 
 /**
  * Load KEY=VALUE pairs from a .env file into process.env.
@@ -24,7 +25,7 @@ function loadEnvFile(filePath, env = process.env) {
     const eq = line.indexOf('=');
     if (eq <= 0) continue;
     const key = line.slice(0, eq).trim();
-    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) continue;
+    if (!isEnvName(key)) continue;
     if (env[key] !== undefined) continue;
     let value = line.slice(eq + 1).trim();
     if (
@@ -38,14 +39,8 @@ function loadEnvFile(filePath, env = process.env) {
 }
 
 function requireEnv(name, env = process.env) {
-  if (!name || typeof name !== 'string') {
-    throw new Error('Environment variable name is required');
-  }
-  const value = env[name];
-  if (value === undefined || value === '') {
-    throw new Error(`Missing required environment variable ${name}`);
-  }
-  return value;
+  const key = assertRequiredEnvName(name);
+  return assertRequiredEnvValue(env[key], key);
 }
 
 module.exports = { loadEnvFile, requireEnv };
