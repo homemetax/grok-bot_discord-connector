@@ -74,6 +74,13 @@ const envName = z.string().regex(ENV_NAME_RE, { error: 'invalid environment vari
 const headerName = z.string().regex(HEADER_NAME_RE, { error: 'Invalid webhook key header name' });
 const mentionMode = z.enum(MENTION_MODES);
 const snowflakeList = z.array(snowflake);
+const historyLimit = z.number().int().min(1).max(DISCORD_HISTORY_MAX);
+const webhookTimeoutMs = z.number().int().min(1000).max(120000);
+const perAuthorDailyLimit = z.number().int().min(0).max(MAX_PER_AUTHOR_DAILY_LIMIT);
+
+/** null and "" count as omitted (same as dev before zod). */
+const blankAs = (fallback, schema) =>
+  z.preprocess((value) => (value === null || value === '' ? fallback : value), schema);
 
 const LoopGuardSchema = z.object({
   max_bot_exchanges: z.number().int().min(1).max(1000).optional(),
@@ -89,35 +96,33 @@ const AgentSchema = z.object({
   webhook_url_env: envName,
   webhook_key_env: envName,
   allowed_channel_ids: snowflakeList.nullish(),
-  history_limit: z.number().int().min(1).max(DISCORD_HISTORY_MAX).optional(),
+  history_limit: historyLimit.optional(),
   enable_dms: z.boolean().optional(),
-  webhook_key_header: headerName.optional(),
-  webhook_timeout_ms: z.number().int().min(1000).max(120000).optional(),
+  webhook_key_header: blankAs(undefined, headerName.optional()),
+  webhook_timeout_ms: webhookTimeoutMs.optional(),
   loop_guard: LoopGuardSchema.optional(),
-  mention_mode: mentionMode.optional(),
-  per_author_daily_limit: z.number().int().min(0).max(MAX_PER_AUTHOR_DAILY_LIMIT).optional(),
+  // dev parity: a blank agent mention_mode means the built-in default, not the config-level value.
+  mention_mode: blankAs(DEFAULT_MENTION_MODE, mentionMode.optional()),
+  per_author_daily_limit: perAuthorDailyLimit.optional(),
   rate_limit_exempt_author_ids: snowflakeList.optional(),
 });
 
 const ConfigSchema = z.object({
-  webhook_key_header: headerName.default(DEFAULT_WEBHOOK_KEY_HEADER),
-  history_limit: z.number().int().min(1).max(DISCORD_HISTORY_MAX).default(DEFAULT_HISTORY_LIMIT),
+  webhook_key_header: blankAs(undefined, headerName.default(DEFAULT_WEBHOOK_KEY_HEADER)),
+  history_limit: historyLimit.default(DEFAULT_HISTORY_LIMIT),
   enable_dms: z.boolean().default(false),
-  webhook_timeout_ms: z.number().int().min(1000).max(120000).default(DEFAULT_WEBHOOK_TIMEOUT_MS),
+  webhook_timeout_ms: webhookTimeoutMs.default(DEFAULT_WEBHOOK_TIMEOUT_MS),
   loop_guard: LoopGuardSchema.default({}),
-  mention_mode: mentionMode.default(DEFAULT_MENTION_MODE),
-  per_author_daily_limit: z
-    .number()
-    .int()
-    .min(0)
-    .max(MAX_PER_AUTHOR_DAILY_LIMIT)
-    .default(DEFAULT_PER_AUTHOR_DAILY_LIMIT),
+  mention_mode: blankAs(undefined, mentionMode.default(DEFAULT_MENTION_MODE)),
+  per_author_daily_limit: perAuthorDailyLimit.default(DEFAULT_PER_AUTHOR_DAILY_LIMIT),
   rate_limit_exempt_author_ids: snowflakeList.nullish().default([]),
-  data_dir: z
-    .string()
-    .refine((value) => !value.includes('\0'), { error: 'Invalid data_dir' })
-    .optional()
-    .default(DEFAULT_DATA_DIR),
+  data_dir: blankAs(
+    undefined,
+    z
+      .string()
+      .refine((value) => !value.includes('\0'), { error: 'Invalid data_dir' })
+      .default(DEFAULT_DATA_DIR),
+  ),
   agents: z.array(AgentSchema).min(1, { error: 'Config must list at least one agent' }),
 }).superRefine((cfg, ctx) => {
   const seen = new Set();
