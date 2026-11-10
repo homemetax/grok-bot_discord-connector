@@ -61,6 +61,7 @@ describe('normalizeConfig', () => {
         token_env: 'GROKBOT_DISCORD_TOKEN',
         webhook_url_env: 'GROKBOT_WEBHOOK_URL',
         webhook_key_env: 'GROKBOT_WEBHOOK_KEY',
+        allowed_channel_ids: ['*'],
       }],
     });
     assert.equal(cfg.webhook_key_header, 'Authorization');
@@ -74,6 +75,7 @@ describe('normalizeConfig', () => {
         token_env: 'AGENT_1_DISCORD_TOKEN',
         webhook_url_env: 'AGENT_1_WEBHOOK_URL',
         webhook_key_env: 'AGENT_1_WEBHOOK_KEY',
+        allowed_channel_ids: ['*'],
       }],
     });
     assert.equal(cfg.mention_mode, 'user_or_role');
@@ -95,6 +97,7 @@ describe('normalizeConfig', () => {
         per_author_daily_limit: 1,
         rate_limit_exempt_author_ids: ['200000000000000001'],
         mention_mode: 'user_only',
+        allowed_channel_ids: ['*'],
       }],
     });
     assert.equal(cfg.agents[0].per_author_daily_limit, 1);
@@ -126,27 +129,55 @@ describe('normalizeConfig', () => {
     );
   });
 
-  it('accepts a missing or empty allowed_channel_ids list', () => {
-    const { allowed_channel_ids: omitted } = normalizeConfig({
+  it('accepts ["*"] as any guild channel', () => {
+    const { allowed_channel_ids } = normalizeConfig({
       agents: [{
         name: 'GrokBot',
         token_env: 'GROKBOT_DISCORD_TOKEN',
         webhook_url_env: 'GROKBOT_WEBHOOK_URL',
         webhook_key_env: 'GROKBOT_WEBHOOK_KEY',
+        allowed_channel_ids: ['*'],
       }],
     }).agents[0];
-    assert.deepEqual(omitted, []);
+    assert.deepEqual(allowed_channel_ids, ['*']);
+  });
 
-    const { allowed_channel_ids: empty } = normalizeConfig({
-      agents: [{
-        name: 'agent-1',
-        token_env: 'AGENT_1_DISCORD_TOKEN',
-        webhook_url_env: 'AGENT_1_WEBHOOK_URL',
-        webhook_key_env: 'AGENT_1_WEBHOOK_KEY',
-        allowed_channel_ids: [],
-      }],
-    }).agents[0];
-    assert.deepEqual(empty, []);
+  it('rejects a missing allowed_channel_ids list', () => {
+    assert.throws(
+      () =>
+        normalizeConfig({
+          agents: [{
+            name: 'GrokBot',
+            token_env: 'GROKBOT_DISCORD_TOKEN',
+            webhook_url_env: 'GROKBOT_WEBHOOK_URL',
+            webhook_key_env: 'GROKBOT_WEBHOOK_KEY',
+          }],
+        }),
+      /"allowed_channel_ids": \["\*"]/,
+    );
+  });
+
+  it('rejects an empty allowed_channel_ids list', () => {
+    assert.throws(
+      () =>
+        normalizeConfig({
+          agents: [{ ...sample.agents[0], allowed_channel_ids: [] }],
+        }),
+      /"allowed_channel_ids": \["\*"]/,
+    );
+  });
+
+  it('rejects mixing "*" with a channel id', () => {
+    assert.throws(
+      () =>
+        normalizeConfig({
+          agents: [{
+            ...sample.agents[0],
+            allowed_channel_ids: ['*', '123456789012345678'],
+          }],
+        }),
+      /"allowed_channel_ids": \["\*"]/,
+    );
   });
 });
 
@@ -174,6 +205,7 @@ describe('example config', () => {
       cwd: path.join(__dirname, '..'),
     });
     const grokbot = cfg.agents.find((a) => a.name === 'GrokBot');
+    assert.deepEqual(grokbot.allowed_channel_ids, ['*']);
     assert.equal(grokbot.per_author_daily_limit, 1);
     assert.deepEqual(grokbot.rate_limit_exempt_author_ids, ['200000000000000001']);
     assert.equal(grokbot.mention_mode, 'user_only');

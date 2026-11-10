@@ -96,7 +96,7 @@ After the invite, the bot’s role must be able to see and speak in the channels
 
 1. Server Settings → **Roles**: put the bot role **above** any roles it must manage.
 2. For each private channel: **Edit channel → Permissions** → add the bot (or its role) with View Channel, Send Messages, Read Message History, Embed Links, Attach Files, Add Reactions. For threads, also Send Messages in Threads.
-3. Optional extra filter in config: `allowed_channel_ids` (see [CONFIG.md](./CONFIG.md)). Missing/`[]` means any guild channel the bot can already see.
+3. Required extra filter in config: `allowed_channel_ids` (see [CONFIG.md](./CONFIG.md)). `["*"]` means any guild channel the bot can already see.
 
 A bot that cannot **View Channel** never receives `MESSAGE_CREATE` for that channel. That looks like “the bot is online but ignores me”.
 

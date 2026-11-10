@@ -5,7 +5,7 @@
 ## Model
 
 - One Discord **application + bot token** per agent (GrokBot, agent-1, agent-2, …).
-- `config/agents.json` lists agents: `name`, token env var, webhook URL env var, webhook key env var, optional `allowed_channel_ids`, `mention_mode`, `per_author_daily_limit`, `rate_limit_exempt_author_ids`. Root `data_dir` (or `DATA_DIR`) holds persisted counts.
+- `config/agents.json` lists agents: `name`, token env var, webhook URL env var, webhook key env var, required `allowed_channel_ids` (`["*"]` = any visible guild channel), `mention_mode`, `per_author_daily_limit`, `rate_limit_exempt_author_ids`. Root `data_dir` (or `DATA_DIR`) holds persisted counts.
 - Secrets live only in `process.env` (typically a `.env` file loaded into the environment). They are never committed or logged.
 - Hosting is a Linux box under **pm2** or **systemd**. No paid SaaS is required. Teammate packaging: `scripts/setup.sh`, `scripts/add-agent.sh`, `scripts/start.sh` (one pm2 process per agent, no `pm2 save`). Scripts never write secret values.
 - **Multi-client in one process** is the default (`node src/index.js` logs in every configured agent). **One process per bot** is `DISCORD_AGENT=<name>`.
@@ -55,7 +55,7 @@ Inbound never executes Discord message text. Outbound never invents permission c
 7. Invite permission integer is `326686067792` (documented in README). Connector code does not further restrict ManageRoles/ManageChannels.
 8. Webhook fetch uses `redirect: 'error'` so the sender key cannot follow a 30x.
 9. Threads are detected via `channel.isThread()` / thread types, never via “has parentId” (that would treat category children as threads).
-10. `allowed_channel_ids` missing or empty means any visible guild channel/thread; a non-empty list is an optional filter. DMs stay off unless `enable_dms`.
+10. `allowed_channel_ids` is required. `["*"]` means any visible guild channel/thread; a list of snowflakes is a filter. DMs stay off unless `enable_dms`.
 11. Default webhook sender header is `Authorization` with `Bearer <key>` unless the key already starts with `Bearer `.
 12. `per_author_daily_limit` 0 (default) is off. A positive cap counts forwards per author per agent over a rolling 24h window. Exempt author ids skip the cap. Hitting the cap logs `rate_limited` at debug and does not POST or reply on Discord. Counts persist atomically under `DATA_DIR` / `data_dir` (default `./data`).
 

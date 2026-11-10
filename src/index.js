@@ -7,12 +7,14 @@ const { createRuntime, loginRuntime, destroyRuntime } = require('./runtime');
 const { createLogger } = require('./logger');
 const { AuthorDailyLimiter } = require('./author-daily');
 const { AUTHOR_DAILY_FILENAME } = require('./constants');
+const { warnOpenAllowlists } = require('./allowlist');
 
 async function main({ env = process.env, cwd = process.cwd() } = {}) {
   loadEnvFile(path.join(cwd, '.env'), env);
   const log = createLogger(null, env);
   const config = loadConfig({ env, cwd });
   const agents = selectAgents(config, env);
+  warnOpenAllowlists(agents, log);
   const dataDir = resolveDataDir({ config, env, cwd });
   const authorLimiter = new AuthorDailyLimiter({
     filePath: path.join(dataDir, AUTHOR_DAILY_FILENAME),

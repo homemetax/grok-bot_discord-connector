@@ -27,7 +27,7 @@ This connector is a bridge: Discord → JSON webhook → Grok Bot, and back thro
 
 - Inbound: `@everyone` / `@here` never trigger the bot. `mention_mode` is `user_or_role` or `user_only`.
 - Outbound: `allowed_mentions` defaults to `{ "parse": ["users"] }` (no everyone, no roles). `--allow-everyone` / `--allow-roles` are explicit.
-- `allowed_channel_ids` missing/`[]` means any guild channel the bot can see (Discord overwrites are the ACL). A non-empty list is an extra filter. DMs stay off unless `enable_dms`.
+- `allowed_channel_ids` is required. `["*"]` means any guild channel the bot can see (Discord overwrites are the ACL). A list of snowflakes is a filter. DMs stay off unless `enable_dms`.
 - Category `parentId` is not treated as a thread parent (that would bypass a channel allowlist).
 
 ## Invite permissions

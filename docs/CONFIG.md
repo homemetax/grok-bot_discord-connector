@@ -35,7 +35,7 @@ Header **name** is config (`webhook_key_header`), not an env var.
 
 ## Per-agent keys
 
-Every agent needs `name`, `token_env`, `webhook_url_env`, `webhook_key_env`. Other keys override the root defaults.
+Every agent needs `name`, `token_env`, `webhook_url_env`, `webhook_key_env`, and `allowed_channel_ids`. Other keys override the root defaults.
 
 | Key | Type | Default | Meaning |
 | --- | --- | --- | --- |
@@ -43,7 +43,7 @@ Every agent needs `name`, `token_env`, `webhook_url_env`, `webhook_key_env`. Oth
 | `token_env` | string | — | Env var **name** for the bot token. |
 | `webhook_url_env` | string | — | Env var **name** for the routine URL. |
 | `webhook_key_env` | string | — | Env var **name** for the sender key. |
-| `allowed_channel_ids` | string[] | omitted / `[]` | **Optional.** Missing or `[]` = any guild channel/thread the bot can see. Non-empty = only those channel ids, plus threads/forum posts whose **parent** is listed. Category `parentId` is not a thread parent. DMs still require `enable_dms`. |
+| `allowed_channel_ids` | string[] | required | **Required.** `["*"]` = any guild channel/thread the bot can see. A list of snowflakes = only those channels, plus threads/forum posts whose **parent** is listed. Missing, `[]`, or mixing `"*"` with ids is a config error (the message includes `"allowed_channel_ids": ["*"]`). Category `parentId` is not a thread parent. DMs still require `enable_dms`. |
 | `mention_mode` | string | `user_or_role` | `user_or_role`: @user mention of the bot **or** a mention of one of its roles. `user_only`: only a direct @user mention; role mentions are ignored. `@everyone` / `@here` never count. |
 | `per_author_daily_limit` | int | `0` | Forwards per author per agent on a rolling 24h window. `0` = off. |
 | `rate_limit_exempt_author_ids` | string[] | `[]` | Author snowflakes that skip the daily cap and are not counted. |

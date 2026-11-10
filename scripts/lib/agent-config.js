@@ -166,6 +166,7 @@ function addAgent(configPath, { name, prefix }) {
     token_env: env.token_env,
     webhook_url_env: env.webhook_url_env,
     webhook_key_env: env.webhook_key_env,
+    allowed_channel_ids: ['*'],
   });
   writeJsonAtomic(configPath, config);
   return { name: agentName, ...env };
