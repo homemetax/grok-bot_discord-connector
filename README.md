@@ -276,7 +276,7 @@ See [docs/OPERATIONS.md](docs/OPERATIONS.md).
 npm run start:pm2
 ```
 
-`scripts/start.sh` starts `grok-discord-<name>` with `DISCORD_AGENT=<name>` for each entry in `config/agents.json`. It does **not** run `pm2 save` (secrets stay out of a pm2 dump). Secrets come from the environment; `src/index.js` loads `.env`.
+`scripts/start.sh` starts `discord-<name>` with `DISCORD_AGENT=<name>` for each entry in `config/agents.json`. It does **not** run `pm2 save` (secrets stay out of a pm2 dump). Secrets come from the environment; `src/index.js` loads `.env`.
 
 ### pm2 (all agents in one process)
 

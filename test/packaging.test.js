@@ -150,9 +150,9 @@ describe('packaging scripts', () => {
       ['--dry-run', '--config', path.join(root, 'config', 'agents.json')],
     );
     assert.equal(result.status, 0, result.stderr || result.stdout);
-    assert.match(result.stdout, /grok-discord-GrokBot/);
+    assert.match(result.stdout, /discord-GrokBot/);
     assert.match(result.stdout, /DISCORD_AGENT=GrokBot/);
-    assert.match(result.stdout, /grok-discord-agent-1/);
+    assert.match(result.stdout, /discord-agent-1/);
     assert.match(result.stdout, /Secrets come from the environment/);
     assert.match(result.stdout, /not running pm2 save|will not run pm2 save/i);
     assert.doesNotMatch(result.stdout, /^\+ .*pm2 save/m);

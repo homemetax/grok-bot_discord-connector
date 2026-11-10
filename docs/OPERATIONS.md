@@ -14,15 +14,17 @@ npm start
 DISCORD_AGENT=GrokBot node src/index.js
 ```
 
-`scripts/start.sh` reads `config/agents.json` and runs `pm2 start src/index.js --name grok-discord-<name>` with `DISCORD_AGENT=<name>`. It does **not** run `pm2 save` (a dump would persist env). Secrets come from the environment; `src/index.js` loads a gitignored `.env` if present.
+`scripts/start.sh` reads `config/agents.json` and runs `pm2 start src/index.js --name discord-<name>` with `DISCORD_AGENT=<name>`. It does **not** run `pm2 save` (a dump would persist env). Never run `pm2 save`. Secrets come from the environment; `src/index.js` loads a gitignored `.env` if present.
 
-systemd units: `deploy/grok-discord.service` (all agents) and `deploy/grok-discord@.service` (one process per bot). `EnvironmentFile` points at `.env`. Do not enable services that dump the full environment on crash.
+systemd units: `deploy/grok-discord.service` (all agents) and `deploy/grok-discord@.service` (one process per bot). Those unit files need **systemd**. They do not apply on container hosts that have no systemd (tini as PID 1, no cron). On those hosts, start the connector manually after reboot (`npm run start:pm2` or `npm start`). Never `pm2 save`.
+
+On a systemd host, `EnvironmentFile` points at `.env`. Do not enable services that dump the full environment on crash.
 
 ## Logs
 
 ```bash
 pm2 logs
-pm2 logs grok-discord-GrokBot
+pm2 logs discord-GrokBot
 LOG_LEVEL=debug npm start
 ```
 
@@ -44,21 +46,21 @@ Useful debug lines:
 ## Restart
 
 ```bash
-pm2 restart grok-discord-GrokBot
+pm2 restart discord-GrokBot
 pm2 restart all
 # after changing Portal intents or tokens:
-pm2 restart grok-discord-GrokBot
+pm2 restart discord-GrokBot
 ```
 
 Intents and tokens are read at process start. Restart after Portal or `.env` edits.
 
-`npm run start:pm2` restarts an existing `grok-discord-<name>` with `--update-env` (still no `pm2 save`).
+`npm run start:pm2` restarts an existing `discord-<name>` with `--update-env` (still no `pm2 save`). Never run `pm2 save`.
 
 ## Stop
 
 ```bash
-pm2 stop grok-discord-GrokBot
-pm2 delete grok-discord-GrokBot
+pm2 stop discord-GrokBot
+pm2 delete discord-GrokBot
 ```
 
 ## Common errors

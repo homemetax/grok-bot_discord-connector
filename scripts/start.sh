@@ -15,14 +15,14 @@ usage() {
 Usage: scripts/start.sh [--dry-run] [--config PATH]
 
   Starts one pm2 process per agent in config/agents.json
-  (name: grok-discord-<agent>, DISCORD_AGENT=<agent>).
+  (name: discord-<agent>, DISCORD_AGENT=<agent>).
 
   Secrets come from the environment. src/index.js loads a gitignored .env
   if present. This script does not source .env, does not pass tokens to
   pm2, and does not run `pm2 save` so a pm2 dump cannot persist secrets.
 
-  Restart later with: pm2 restart grok-discord-<name>
-  Logs:              pm2 logs grok-discord-<name>
+  Restart later with: pm2 restart discord-<name>
+  Logs:              pm2 logs discord-<name>
   See docs/OPERATIONS.md.
 
 Options:
@@ -78,7 +78,7 @@ if [ "$DRY_RUN" -eq 0 ] && ! command -v pm2 >/dev/null 2>&1; then
 fi
 
 for name in "${NAMES[@]}"; do
-  proc="grok-discord-${name}"
+  proc="discord-${name}"
   # Only DISCORD_AGENT is set here. Tokens stay in the process environment /
   # .env that Node loads — they are never written to a pm2 dump by this script.
   cmd=(env DISCORD_AGENT="$name" CONFIG_PATH="$CONFIG" pm2 start src/index.js
