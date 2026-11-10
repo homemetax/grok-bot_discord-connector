@@ -78,6 +78,25 @@ const historyLimit = z.number().int().min(1).max(DISCORD_HISTORY_MAX);
 const webhookTimeoutMs = z.number().int().min(1000).max(120000);
 const perAuthorDailyLimit = z.number().int().min(0).max(MAX_PER_AUTHOR_DAILY_LIMIT);
 
+/** Exact JSON line to add when an agent should accept any visible guild channel. */
+const ALLOWLIST_STAR_LINE = '"allowed_channel_ids": ["*"]';
+const ALLOWLIST_REQUIRED_MSG =
+  `allowed_channel_ids is required. To allow any guild channel the bot can see, add ${ALLOWLIST_STAR_LINE}`;
+const ALLOWLIST_EMPTY_MSG =
+  `allowed_channel_ids must not be empty. To allow any guild channel the bot can see, add ${ALLOWLIST_STAR_LINE}`;
+const ALLOWLIST_MIXED_MSG =
+  `allowed_channel_ids cannot mix "*" with channel ids. Use only ${ALLOWLIST_STAR_LINE} or a list of snowflakes`;
+
+const allowedChannelEntry = z.union([z.literal('*'), snowflake]);
+const allowedChannelIds = z
+  .array(allowedChannelEntry, { error: ALLOWLIST_REQUIRED_MSG })
+  .min(1, { error: ALLOWLIST_EMPTY_MSG })
+  .superRefine((ids, ctx) => {
+    if (ids.includes('*') && ids.length !== 1) {
+      ctx.addIssue({ code: 'custom', message: ALLOWLIST_MIXED_MSG });
+    }
+  });
+
 /** null and "" count as omitted (same as dev before zod). */
 const blankAs = (fallback, schema) =>
   z.preprocess((value) => (value === null || value === '' ? fallback : value), schema);
@@ -95,7 +114,7 @@ const AgentSchema = z.object({
   token_env: envName,
   webhook_url_env: envName,
   webhook_key_env: envName,
-  allowed_channel_ids: snowflakeList.nullish(),
+  allowed_channel_ids: allowedChannelIds,
   history_limit: historyLimit.optional(),
   enable_dms: z.boolean().optional(),
   webhook_key_header: blankAs(undefined, headerName.optional()),
@@ -183,7 +202,7 @@ function applyAgentDefaults(parsed) {
       token_env: agent.token_env,
       webhook_url_env: agent.webhook_url_env,
       webhook_key_env: agent.webhook_key_env,
-      allowed_channel_ids: agent.allowed_channel_ids ? agent.allowed_channel_ids.slice() : [],
+      allowed_channel_ids: agent.allowed_channel_ids.slice(),
       history_limit: agent.history_limit === undefined ? parsed.history_limit : agent.history_limit,
       enable_dms: agent.enable_dms === undefined ? parsed.enable_dms : agent.enable_dms,
       webhook_key_header: agent.webhook_key_header || parsed.webhook_key_header,

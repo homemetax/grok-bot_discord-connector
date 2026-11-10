@@ -17,13 +17,15 @@
       "webhook_key_env": "GROKBOT_WEBHOOK_KEY",
       "per_author_daily_limit": 1,
       "rate_limit_exempt_author_ids": ["200000000000000001"],
-      "mention_mode": "user_only"
+      "mention_mode": "user_only",
+      "allowed_channel_ids": ["*"]
     },
     {
       "name": "agent-1",
       "token_env": "AGENT_1_DISCORD_TOKEN",
       "webhook_url_env": "AGENT_1_WEBHOOK_URL",
-      "webhook_key_env": "AGENT_1_WEBHOOK_KEY"
+      "webhook_key_env": "AGENT_1_WEBHOOK_KEY",
+      "allowed_channel_ids": ["*"]
     },
     {
       "name": "agent-2",

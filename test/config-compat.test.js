@@ -15,6 +15,7 @@ const agent = {
   token_env: 'AGENT_1_DISCORD_TOKEN',
   webhook_url_env: 'AGENT_1_WEBHOOK_URL',
   webhook_key_env: 'AGENT_1_WEBHOOK_KEY',
+  allowed_channel_ids: ['*'],
 };
 
 describe('config null / "" fallbacks match dev', () => {

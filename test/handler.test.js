@@ -44,7 +44,7 @@ function mockRuntime({ authorLimiter, agent = {}, env = {} } = {}) {
     client: { user: { id: BOT } },
     agent: {
       name: 'GrokBot',
-      allowed_channel_ids: [],
+      allowed_channel_ids: ['*'],
       enable_dms: false,
       mention_mode: 'user_only',
       per_author_daily_limit: 1,

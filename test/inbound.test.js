@@ -86,11 +86,11 @@ describe('evaluateInbound', () => {
     assertIgnored(result, 'dm_disabled');
   });
 
-  it('forwards a mention in any guild channel when the allowlist is empty', () => {
+  it('forwards a mention in any guild channel when the allowlist is ["*"]', () => {
     const g = new LoopGuard({ cooldownMs: 0 });
     const result = evaluateInbound(
       event({ channelId: '100000000000000099' }),
-      policy({ allowedChannelIds: [] }),
+      policy({ allowedChannelIds: ['*'] }),
       g,
     );
     assert.equal(result.action, 'forward');
@@ -100,7 +100,7 @@ describe('evaluateInbound', () => {
     const g = new LoopGuard();
     const result = evaluateInbound(
       event({ isDm: true, channelId: 'dm1' }),
-      policy({ allowedChannelIds: [] }),
+      policy({ allowedChannelIds: ['*'] }),
       g,
     );
     assertIgnored(result, 'dm_disabled');
@@ -110,7 +110,7 @@ describe('evaluateInbound', () => {
     const g = new LoopGuard({ cooldownMs: 0 });
     const result = evaluateInbound(
       event({ isDm: true, channelId: 'dm1' }),
-      policy({ enableDms: true, allowedChannelIds: [] }),
+      policy({ enableDms: true, allowedChannelIds: ['*'] }),
       g,
     );
     assert.equal(result.action, 'forward');

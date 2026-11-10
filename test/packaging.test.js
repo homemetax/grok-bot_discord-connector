@@ -92,6 +92,7 @@ describe('agent-config helpers', () => {
       token_env: 'NOVA_DISCORD_TOKEN',
       webhook_url_env: 'NOVA_WEBHOOK_URL',
       webhook_key_env: 'NOVA_WEBHOOK_KEY',
+      allowed_channel_ids: ['*'],
     });
 
     const appended = appendEmptyEnvNames(

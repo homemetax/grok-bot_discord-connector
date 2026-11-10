@@ -104,7 +104,7 @@ function mockRuntime({ authorLimiter, agent = {}, env = {}, hookUrl } = {}) {
     client: { user: { id: BOT } },
     agent: {
       name: 'GrokBot',
-      allowed_channel_ids: [],
+      allowed_channel_ids: ['*'],
       enable_dms: false,
       mention_mode: 'user_only',
       per_author_daily_limit: 0,
@@ -253,12 +253,12 @@ describe('webhook header style regressions', () => {
 });
 
 describe('allowlist and author-limit regressions (through handler)', () => {
-  it('empty/missing allowed_channel_ids forwards a mention in any guild channel', async () => {
+  it('["*"] allowed_channel_ids forwards a mention in any guild channel', async () => {
     const srv = await startRoutineServer({ expectedKey: KEY });
     try {
       const runtime = mockRuntime({
         hookUrl: srv.url,
-        agent: { allowed_channel_ids: [] },
+        agent: { allowed_channel_ids: ['*'] },
       });
       await handleMessageCreate(runtime, mockMessage({ channelId: OTHER_CHANNEL }));
       assert.equal(srv.requests.length, 1);

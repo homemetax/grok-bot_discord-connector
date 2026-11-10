@@ -65,7 +65,7 @@ Repeat for **each** agent (GrokBot, agent-1, agent-2, …).
    - Scopes: `bot`
    - Permissions integer: `326686067792` (see [Invite URL](#invite-url))
    - Open the generated URL while logged into a guild admin account and authorize.
-5. Channel access is controlled by Discord role permissions and overwrites. Optionally restrict further by copying channel IDs (Developer Mode → Copy Channel ID) into `allowed_channel_ids`. Omit the field or leave it `[]` to accept any guild channel or thread the bot can see.
+5. Channel access is controlled by Discord role permissions and overwrites. Set `allowed_channel_ids` per agent: `["*"]` accepts any guild channel or thread the bot can see; a list of channel IDs (Developer Mode → Copy Channel ID) restricts further. Missing or `[]` is a config error.
 6. Give the bot role a position **above** any roles it must manage, and grant channel overwrites it actually needs. The connector does not cap permissions; Discord will 403 when hierarchy or overwrites deny the action.
 
 Intents used in code (`src/runtime.js`), matching [Gateway intents](https://discord.com/developers/docs/events/gateway):
@@ -148,7 +148,8 @@ Header **name** is config (`webhook_key_header`, default `Authorization`), not a
       "webhook_key_env": "GROKBOT_WEBHOOK_KEY",
       "per_author_daily_limit": 1,
       "rate_limit_exempt_author_ids": ["200000000000000001"],
-      "mention_mode": "user_only"
+      "mention_mode": "user_only",
+      "allowed_channel_ids": ["*"]
     }
   ]
 }
@@ -156,7 +157,7 @@ Header **name** is config (`webhook_key_header`, default `Authorization`), not a
 
 Per-agent overrides: `enable_dms`, `history_limit` (1–100), `webhook_key_header`, `webhook_timeout_ms`, `loop_guard`, `allowed_channel_ids`, `mention_mode`, `per_author_daily_limit`, `rate_limit_exempt_author_ids`.
 
-`allowed_channel_ids` is **optional**. Missing or `[]` means the bot responds in any guild channel or thread it can see; Discord role permissions and channel overwrites are the access control. A non-empty list is an extra filter: only those channels, plus threads (and forum posts) whose **parent** is listed. DMs stay off unless `enable_dms` is true.
+`allowed_channel_ids` is **required** per agent. `["*"]` means the bot responds in any guild channel or thread it can see (Discord role permissions and channel overwrites are the access control). A list of snowflakes is a filter: only those channels, plus threads (and forum posts) whose **parent** is listed. Missing, `[]`, or mixing `"*"` with ids is a config error; the message includes the line `"allowed_channel_ids": ["*"]`. DMs stay off unless `enable_dms` is true. Existing configs without the field fail at startup until you add that one line.
 
 `mention_mode` is `user_or_role` (default) or `user_only`. `user_or_role` matches a direct @user mention of the bot **or** a mention of one of the bot's roles. `user_only` requires a direct @user mention; role mentions are ignored.
 
@@ -168,7 +169,7 @@ On `MESSAGE_CREATE` for that agent's client:
 
 1. Ignore the bot's **own** messages.
 2. Ignore DMs unless `enable_dms`.
-3. If `allowed_channel_ids` is set and non-empty, ignore guild messages whose channel (or thread parent) is not listed. If it is missing or empty, accept any guild channel or thread the bot can see.
+3. If `allowed_channel_ids` is `["*"]`, accept any guild channel or thread the bot can see. Otherwise ignore guild messages whose channel (or thread parent) is not listed.
 4. Act only if the bot is mentioned. Default `mention_mode` `user_or_role`: `message.mentions.users` contains this bot's user id **or** `mention_roles` contains one of this bot's roles. `user_only`: only a direct @user mention of the bot counts; role mentions are ignored. **@everyone / @here are not triggers** (`mention_everyone` is ignored as a mention of the bot). The @everyone role id (guild id) is not treated as a bot role.
 5. Humans and other bots are both accepted. Bot-to-bot traffic is limited **per agent + channel/thread**: a sliding-window cap and a cooldown. A human message resets that chain.
 6. If `per_author_daily_limit` is greater than 0, count this forward for that author on this agent over a rolling 24h window. Exempt author ids skip the cap. When the cap is hit, stop: log `rate_limited` at debug and do not POST or reply on Discord.
@@ -314,7 +315,7 @@ sudo systemctl enable --now grok-discord@GrokBot grok-discord@agent-1
 - **Untrusted content:** Discord `content` is JSON data. It is never passed to a shell, `eval`, or dynamic `require`. Do not pipe it to a shell on the Grok Bot side either.
 - **Webhook POSTs do not follow redirects**, so a 30x cannot leak the sender-key header to another host. 401/403 are not retried. 429 waits are capped (15s) using `Retry-After` / `retry_after`.
 - **@everyone / roles:** inbound ignores mass pings as a bot trigger; outbound blocks those mention types by default.
-- **Allowlist (optional):** missing or empty `allowed_channel_ids` accepts every guild channel/thread the bot can see. A non-empty list is a filter. Category `parentId` is not treated as a thread parent. Only real threads/forum posts inherit the parent channel allowlist. DMs stay off unless `enable_dms`.
+- **Allowlist (required):** `allowed_channel_ids: ["*"]` accepts every guild channel/thread the bot can see. A list of snowflakes is a filter. Missing or `[]` is a config error. Category `parentId` is not treated as a thread parent. Only real threads/forum posts inherit the parent channel allowlist. DMs stay off unless `enable_dms`.
 - **ManageRoles / ManageChannels:** included in the invite integer. A bot can only assign roles **below** its highest role, and cannot grant permissions it does not have. Moving the bot role to the top of the list, or leaving ManageRoles on a publicly invitable bot, is a guild-compromise risk. Prefer a dedicated bot role, deny those permissions in channel overwrites where unused, and keep tokens on the host only.
 - **DMs** are off unless you set `enable_dms`.
 - **Loop guard** stops two bots from bouncing mentions forever in the same thread/channel.
